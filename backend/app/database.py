@@ -75,12 +75,29 @@ _FTS_STATEMENTS = [
 ]
 
 
+def _ensure_columns() -> None:
+    """Añade a `items` columnas nuevas del modelo que falten (migración ligera).
+
+    `create_all` NO altera tablas que ya existen, así que en una BD previa hay que
+    añadir a mano las columnas nuevas. Idempotente: solo actúa si faltan.
+    """
+    with engine.begin() as conn:
+        existing = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(items)")}
+        if "is_premium" not in existing:
+            conn.exec_driver_sql(
+                "ALTER TABLE items ADD COLUMN is_premium BOOLEAN NOT NULL DEFAULT 0"
+            )
+
+
 def init_db() -> None:
     """Crea la carpeta de la BD, las tablas, los índices y el motor FTS5."""
     settings.database_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Tablas e índices definidos por los modelos SQLModel.
     SQLModel.metadata.create_all(engine)
+
+    # Migración ligera: columnas nuevas en tablas ya existentes.
+    _ensure_columns()
 
     # Tabla virtual FTS5 + triggers (SQL nativo).
     with engine.begin() as conn:

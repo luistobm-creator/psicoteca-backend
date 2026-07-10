@@ -7,12 +7,19 @@ import SearchResults from './components/SearchResults.jsx';
 import Pagination from './components/Pagination.jsx';
 import Dashboard from './components/Dashboard.jsx';
 import ReaderPanel from './components/ReaderPanel.jsx';
+import SearchBar from './components/SearchBar.jsx';
+import UserMenu from './components/UserMenu.jsx';
+import UpgradeModal from './components/UpgradeModal.jsx';
 import { Sun, Moon, Library } from './components/icons.jsx';
+import { Link } from 'react-router-dom';
+import { useAuth } from './context/AuthContext.jsx';
 
 const PAGE_SIZE = 60;
 const SEARCH_LIMIT = 50;
 const SEARCH_DEBOUNCE_MS = 300;
 const THEME_KEY = 'psicoteca-theme-v2';
+const RECENTS_KEY = 'psicoteca-recents-v1';
+const RECENTS_MAX = 6;
 
 // Recorre el árbol una vez y devuelve índices por id: el nodo y su padre.
 function indexTree(roots) {
@@ -41,11 +48,41 @@ export default function App() {
     }
   }, [theme]);
 
+  // --- Sesión de usuario (estado global vía AuthContext) ---
+  const { isAuthenticated, plan, loading: authLoading, refreshUser } = useAuth();
+
+  // Al volver de Stripe Checkout (?checkout=success) refrescamos la sesión para
+  // reflejar el plan Pro que el webhook acaba de activar, y limpiamos la URL.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const checkout = params.get('checkout');
+    if (!checkout) return;
+    if (checkout === 'success') refreshUser();
+    params.delete('checkout');
+    const qs = params.toString();
+    window.history.replaceState(
+      {},
+      '',
+      window.location.pathname + (qs ? `?${qs}` : '')
+    );
+  }, [refreshUser]);
+
+  // --- Documentos recientes (accesos rápidos), persistidos en el navegador ---
+  const [recents, setRecents] = useState(() => {
+    try {
+      const arr = JSON.parse(localStorage.getItem(RECENTS_KEY) || '[]');
+      return Array.isArray(arr) ? arr : [];
+    } catch {
+      return [];
+    }
+  });
+
   // --- Árbol y estadísticas ---
   const [tree, setTree] = useState([]);
   const [treeLoading, setTreeLoading] = useState(true);
   const [treeError, setTreeError] = useState(null);
   const [stats, setStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
   const { byId, parentOf } = useMemo(() => indexTree(tree), [tree]);
 
   // --- Navegación / selección ---
@@ -62,6 +99,30 @@ export default function App() {
   // --- Lector (panel derecho) ---
   const [openFile, setOpenFile] = useState(null);
 
+  // Abre un archivo en el lector y lo registra en "accesos rápidos".
+  const openFileInReader = useCallback((file) => {
+    setOpenFile(file);
+    if (!file || file.is_folder) return;
+    setRecents((prev) => {
+      const slim = {
+        id: file.id,
+        name: file.name,
+        mime_type: file.mime_type,
+        size: file.size,
+        modified_time: file.modified_time,
+        path: file.path,
+        is_premium: file.is_premium,
+      };
+      const next = [slim, ...prev.filter((r) => r.id !== file.id)].slice(0, RECENTS_MAX);
+      try {
+        localStorage.setItem(RECENTS_KEY, JSON.stringify(next));
+      } catch {
+        /* almacenamiento no disponible */
+      }
+      return next;
+    });
+  }, []);
+
   // --- Búsqueda ---
   const [searchValue, setSearchValue] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -69,7 +130,21 @@ export default function App() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState(null);
   const searchSeq = useRef(0);
+  const searchInputRef = useRef(null);
   const searchMode = searchValue.trim().length > 0;
+
+  // Atajo de teclado: Ctrl/Cmd + K enfoca la búsqueda global.
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   // Cargar árbol + stats al montar. NO se autoselecciona carpeta: se muestra
   // el Dashboard. Sí se expande la raíz para ver las categorías en el árbol.
@@ -98,6 +173,9 @@ export default function App() {
       })
       .catch(() => {
         /* el dashboard tolera stats vacías */
+      })
+      .finally(() => {
+        if (!cancelled) setStatsLoading(false);
       });
 
     return () => {
@@ -192,6 +270,39 @@ export default function App() {
     [revealFolder]
   );
 
+  // --- Gating visual: interceptar clics en contenido Pro (usuarios no-Pro) ---
+  // El item que disparó el modal de upgrade (null = modal cerrado).
+  const [upgradeItem, setUpgradeItem] = useState(null);
+
+  const handleOpenFolder = useCallback(
+    (nodeOrId) => {
+      // Puede llegar un id (breadcrumb / navegación ya autorizada) o un objeto
+      // (clic del usuario). Solo bloqueamos objetos Pro para usuarios no-Pro.
+      if (
+        nodeOrId &&
+        typeof nodeOrId === 'object' &&
+        nodeOrId.is_premium &&
+        plan !== 'pro'
+      ) {
+        setUpgradeItem(nodeOrId);
+        return;
+      }
+      selectFolder(nodeOrId);
+    },
+    [plan, selectFolder]
+  );
+
+  const handleOpenFile = useCallback(
+    (file) => {
+      if (file?.is_premium && plan !== 'pro') {
+        setUpgradeItem(file);
+        return;
+      }
+      openFileInReader(file);
+    },
+    [plan, openFileInReader]
+  );
+
   const toggleExpand = useCallback((id) => {
     setExpanded((prev) => {
       const next = new Set(prev);
@@ -238,15 +349,44 @@ export default function App() {
             <span className="topbar__subtitle">Espacio de estudio clínico</span>
           </span>
         </button>
-        <button
-          type="button"
-          className="iconbtn"
-          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
-          aria-label="Cambiar tema"
-        >
-          {theme === 'dark' ? <Sun width={18} height={18} /> : <Moon width={18} height={18} />}
-        </button>
+
+        <div className="topbar__search">
+          <SearchBar
+            value={searchValue}
+            onChange={setSearchValue}
+            onClear={() => setSearchValue('')}
+            inputRef={searchInputRef}
+            className="searchbar--hero"
+            placeholder="Buscar documentos, carpetas o temas…"
+            showHint
+          />
+        </div>
+
+        <div className="topbar__actions">
+          <button
+            type="button"
+            className="iconbtn"
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+            aria-label="Cambiar tema"
+          >
+            {theme === 'dark' ? <Sun width={18} height={18} /> : <Moon width={18} height={18} />}
+          </button>
+          {authLoading ? (
+            <span className="topbar__authskel skeleton" aria-hidden="true" />
+          ) : isAuthenticated ? (
+            <UserMenu />
+          ) : (
+            <nav className="topbar__auth" aria-label="Cuenta">
+              <Link to="/login" className="authbtn">
+                Iniciar sesión
+              </Link>
+              <Link to="/register" className="authbtn authbtn--primary">
+                Crear cuenta
+              </Link>
+            </nav>
+          )}
+        </div>
       </header>
 
       <div className="workspace" data-reader={readerOpen ? 'open' : 'closed'}>
@@ -256,17 +396,24 @@ export default function App() {
           error={treeError}
           selectedId={selectedId}
           expanded={expanded}
+          plan={plan}
           onToggle={toggleExpand}
-          onSelect={selectFolder}
-          searchValue={searchValue}
-          onSearchChange={setSearchValue}
-          onSearchClear={() => setSearchValue('')}
+          onSelect={handleOpenFolder}
         />
 
         <section className="center">
           {centerView === 'dashboard' && (
             <div className="center__scroll">
-              <Dashboard stats={stats} topFolders={topFolders} onOpenFolder={selectFolder} />
+              <Dashboard
+                stats={stats}
+                statsLoading={statsLoading}
+                treeLoading={treeLoading}
+                topFolders={topFolders}
+                recents={recents}
+                plan={plan}
+                onOpenFolder={handleOpenFolder}
+                onOpenFile={handleOpenFile}
+              />
             </div>
           )}
 
@@ -290,8 +437,9 @@ export default function App() {
                   loading={searchLoading}
                   error={searchError}
                   activeId={openFile?.id}
-                  onOpenFolder={selectFolder}
-                  onOpenFile={setOpenFile}
+                  plan={plan}
+                  onOpenFolder={handleOpenFolder}
+                  onOpenFile={handleOpenFile}
                 />
               </div>
             </>
@@ -314,11 +462,12 @@ export default function App() {
                   error={itemsError}
                   activeId={openFile?.id}
                   compact={readerOpen}
+                  plan={plan}
                   emptyText={
                     selectedFolder ? 'Esta carpeta está vacía.' : 'Selecciona una carpeta.'
                   }
-                  onOpenFolder={selectFolder}
-                  onOpenFile={setOpenFile}
+                  onOpenFolder={handleOpenFolder}
+                  onOpenFile={handleOpenFile}
                 />
               </div>
               {pagination && pagination.total_pages > 1 && (
@@ -337,6 +486,10 @@ export default function App() {
 
         {readerOpen && <ReaderPanel file={openFile} onClose={() => setOpenFile(null)} />}
       </div>
+
+      {upgradeItem && (
+        <UpgradeModal item={upgradeItem} onClose={() => setUpgradeItem(null)} />
+      )}
     </div>
   );
 }

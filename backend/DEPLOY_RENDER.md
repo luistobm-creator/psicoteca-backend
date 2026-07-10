@@ -41,13 +41,42 @@ y conectarla con el frontend ya alojado en `https://psicoteca.miceliocreate.com`
 
 ## 3. Variables de entorno (en el panel de Render)
 
+**Google Drive**
+
 | Variable | Valor | Obligatoria |
 |---|---|---|
 | `GOOGLE_CREDENTIALS_JSON` | *Contenido íntegro del `credentials.json`* (pégalo tal cual) | ✅ Sí |
 | `ROOT_FOLDER_ID` | ID de la carpeta `PSICOTECA` en Drive | ✅ Recomendada |
-| `CORS_ALLOW_ORIGINS` | `https://psicoteca.miceliocreate.com` | ✅ Sí |
 | `ROOT_FOLDER_NAME` | `PSICOTECA` | Opcional |
-| `SCHEDULER_ENABLED` | `true` | Opcional (por defecto true) |
+
+**Red / CORS**
+
+| Variable | Valor | Obligatoria |
+|---|---|---|
+| `CORS_ALLOW_ORIGINS` | `https://psicoteca.miceliocreate.com` (dominio del frontend) | ✅ Sí |
+
+**Pagos: Stripe (Fase 2)** — *SECRETO = nunca en el frontend ni en el repo*
+
+| Variable | Valor | Obligatoria |
+|---|---|---|
+| `STRIPE_SECRET_KEY` | `sk_live_…` (o `sk_test_…` en modo prueba) — **SECRETO** | ✅ Sí |
+| `STRIPE_PRICE_ID` | `price_…` del plan Pro (del mismo modo test/live que la key) | ✅ Sí |
+| `STRIPE_WEBHOOK_SECRET` | `whsec_…` del **endpoint del Dashboard** (⚠️ NO el de `stripe listen`) | ✅ Sí |
+
+**Supabase (Fase 2)**
+
+| Variable | Valor | Obligatoria |
+|---|---|---|
+| `SUPABASE_URL` | `https://<ref>.supabase.co` | ✅ Sí |
+| `SUPABASE_ANON_KEY` | `sb_publishable_…` (clave pública) | ✅ Sí |
+| `SUPABASE_SERVICE_ROLE_KEY` | `sb_secret_…` (o JWT `service_role`) — **SECRETO**; el webhook la usa para activar Pro | ✅ Sí |
+| `FRONTEND_BASE_URL` | `https://psicoteca.miceliocreate.com` (success/cancel del Checkout) | ✅ Sí |
+
+**Sincronización / runtime (opcionales, con valores por defecto)**
+
+| Variable | Valor | Obligatoria |
+|---|---|---|
+| `SCHEDULER_ENABLED` | `true` | Opcional |
 | `SYNC_INTERVAL_MINUTES` | `60` | Opcional |
 | `SYNC_ON_STARTUP` | `true` | Opcional |
 | `SYNC_JITTER_SECONDS` | `30` | Opcional |
@@ -57,6 +86,30 @@ y conectarla con el frontend ya alojado en `https://psicoteca.miceliocreate.com`
 > **`GOOGLE_CREDENTIALS_JSON`**: no subas `credentials.json` al repo. Copia su
 > contenido completo (un JSON de una línea) y pégalo como valor de esta variable.
 > El código lo prioriza sobre cualquier archivo en disco.
+
+> **Modo de Stripe**: si `STRIPE_SECRET_KEY` es `sk_test_…`, se cobran **tarjetas
+> de prueba** (no dinero real). Para vender de verdad, cambia a modo **live**
+> TODAS las piezas a la vez: `sk_live_…`, un `price_…` creado en modo live, el
+> `whsec_…` del webhook **live**, y en el frontend `VITE_STRIPE_PUBLIC_KEY=pk_live_…`
+> (recompilando el `dist`).
+
+---
+
+## 3.1 Webhook de Stripe en PRODUCCIÓN (imprescindible para activar Pro)
+
+En local usábamos `stripe listen` (su `whsec_` NO sirve en la nube). En producción
+hay que registrar el endpoint en el panel de Stripe:
+
+1. **Stripe Dashboard** (en el mismo modo, test o live, que tus keys) →
+   **Developers → Webhooks → Add endpoint**.
+2. **Endpoint URL:** `https://psicoteca-api.onrender.com/api/webhook`
+   *(sustituye por tu URL real de Render).*
+3. **Events to send:** selecciona `checkout.session.completed`.
+4. Crea el endpoint y copia su **Signing secret** (`whsec_…`).
+5. Pégalo en Render como **`STRIPE_WEBHOOK_SECRET`** y guarda (Render redeploya).
+
+Prueba: haz un pago con tarjeta de prueba `4242 4242 4242 4242`; en el panel del
+webhook debe verse el evento con respuesta **200**, y el usuario pasa a Pro.
 
 ---
 

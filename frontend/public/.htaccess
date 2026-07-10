@@ -1,0 +1,31 @@
+# SPA fallback para React Router en Hostinger (Apache).
+# Vite copia este archivo a dist/ durante `npm run build`.
+# Sin esto, recargar o entrar directo a /login o /register daría un 404,
+# porque esas rutas solo existen en el cliente.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # No reescribir archivos o carpetas que existen de verdad (assets, fuentes…).
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Todo lo demás lo sirve index.html (la app se encarga del enrutado).
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+# --- Cache: assets con hash (immutable) cache largo; HTML sin cache ----------
+<IfModule mod_headers.c>
+  <FilesMatch "\.(js|css|woff2?|ttf|png|jpe?g|gif|svg|webp|avif|ico)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  <FilesMatch "\.html$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+</IfModule>
+
+# --- Compresión --------------------------------------------------------------
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json image/svg+xml
+</IfModule>

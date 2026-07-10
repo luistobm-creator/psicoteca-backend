@@ -10,6 +10,9 @@ tokens tipo palabra (soporta acentos y ñ), cada uno se cita para neutralizar la
 sintaxis especial de FTS5 (comillas, `*`, `AND`/`OR`/`NEAR`, `:`...) y se marca
 como prefijo para permitir búsqueda "mientras se escribe". Así una entrada
 arbitraria nunca provoca `fts5: syntax error`.
+
+Contenido Pro: se devuelven TODOS los resultados con su flag `is_premium`; no se
+filtra por plan (gating visual en el frontend).
 """
 from __future__ import annotations
 
@@ -41,7 +44,7 @@ def build_match_query(q: str) -> str:
 _SELECT_COLS = """
     i.id, i.name, i.mime_type, i.is_folder, i.parent_id,
     i.size, i.modified_time, i.created_time,
-    i.web_view_link, i.icon_link, i.path, i.depth
+    i.icon_link, i.path, i.depth, i.is_premium
 """
 
 

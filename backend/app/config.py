@@ -63,6 +63,18 @@ class Settings(BaseSettings):
     # vacío, ese endpoint queda deshabilitado (recomendado si no se necesita).
     sync_trigger_token: str | None = None
 
+    # --- Pagos: Stripe + validación de usuario Supabase (Fase 2) ---
+    stripe_secret_key: str | None = None    # sk_test_… / sk_live_… (SECRETO, solo backend)
+    stripe_price_id: str | None = None      # price_… del plan Pro (recurrente, en MXN)
+    stripe_webhook_secret: str | None = None  # whsec_… verifica la firma del webhook (del panel o `stripe listen`)
+    supabase_url: str | None = None         # https://<ref>.supabase.co
+    supabase_anon_key: str | None = None    # anon/publishable key (valida el token del usuario)
+    # service_role key (SECRETO, SOLO backend): única que puede modificar a otros
+    # usuarios vía la Admin API. La usa el webhook para fijar el plan Pro. NUNCA
+    # debe exponerse al frontend ni al bundle.
+    supabase_service_role_key: str | None = None
+    frontend_base_url: str = "https://psicoteca.miceliocreate.com"  # success/cancel de Checkout
+
     @property
     def database_url(self) -> str:
         return f"sqlite:///{self.database_path}"

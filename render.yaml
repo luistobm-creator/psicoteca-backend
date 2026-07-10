@@ -55,6 +55,27 @@ services:
       - key: SYNC_TRIGGER_TOKEN
         sync: false
 
+      # --- Fase 2: Pagos con Stripe (se pegan en el panel) ---
+      - key: STRIPE_SECRET_KEY          # sk_live_… / sk_test_…  (SECRETO)
+        sync: false
+      - key: STRIPE_PRICE_ID            # price_… del plan Pro (mismo modo que la key)
+        sync: false
+      # whsec_ del ENDPOINT del Dashboard de Stripe (NO el de `stripe listen`).
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+
+      # --- Fase 2: Supabase (auth + activación del plan Pro) ---
+      - key: SUPABASE_URL              # https://<ref>.supabase.co
+        sync: false
+      - key: SUPABASE_ANON_KEY         # sb_publishable_… (pública)
+        sync: false
+      # service_role / secret key (SECRETO): el webhook la usa para activar Pro.
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      # URL del frontend para las páginas de éxito/cancelación del Checkout.
+      - key: FRONTEND_BASE_URL
+        value: https://psicoteca.miceliocreate.com
+
     # --- Disco persistente (OPCIONAL, solo planes de pago) ---
     # El plan free tiene disco EFÍMERO: la BD se repuebla en cada arranque
     # (SYNC_ON_STARTUP=true). Para persistir la caché entre despliegues, añade un

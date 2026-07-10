@@ -1,10 +1,11 @@
-import { Folder, BookOpen } from './icons.jsx';
+import { Folder, BookOpen, Lock } from './icons.jsx';
 import { fileType, formatSize, formatDate } from '../lib/fileType.js';
 
-function ResultRow({ item, activeId, onOpenFolder, onOpenFile }) {
+function ResultRow({ item, activeId, plan = 'free', onOpenFolder, onOpenFile }) {
   const isFolder = item.is_folder;
   const ft = isFolder ? null : fileType(item);
   const isActive = item.id === activeId;
+  const locked = !!item.is_premium && plan !== 'pro';
 
   // Ruta del contenedor (sin el propio nombre) para ubicar el resultado.
   const parentPath = (item.path || '').split('/').slice(0, -1).join(' › ');
@@ -29,7 +30,11 @@ function ResultRow({ item, activeId, onOpenFolder, onOpenFile }) {
       </div>
       <div className="result__meta">{meta}</div>
       <span className="result__open" aria-hidden="true">
-        {isFolder ? null : <BookOpen width={15} height={15} />}
+        {locked ? (
+          <Lock width={15} height={15} />
+        ) : isFolder ? null : (
+          <BookOpen width={15} height={15} />
+        )}
       </span>
     </>
   );
@@ -38,9 +43,9 @@ function ResultRow({ item, activeId, onOpenFolder, onOpenFile }) {
     return (
       <button
         type="button"
-        className="result result--folder"
-        onClick={() => onOpenFolder(item.id)}
-        title={item.name}
+        className={'result result--folder' + (locked ? ' result--locked' : '')}
+        onClick={() => onOpenFolder(item)}
+        title={locked ? `${item.name} · Contenido Pro` : item.name}
       >
         {inner}
       </button>
@@ -50,9 +55,11 @@ function ResultRow({ item, activeId, onOpenFolder, onOpenFile }) {
   return (
     <button
       type="button"
-      className={'result' + (isActive ? ' is-active' : '')}
+      className={
+        'result' + (isActive ? ' is-active' : '') + (locked ? ' result--locked' : '')
+      }
       onClick={() => onOpenFile(item)}
-      title={item.name}
+      title={locked ? `${item.name} · Contenido Pro` : item.name}
     >
       {inner}
     </button>
@@ -65,6 +72,7 @@ export default function SearchResults({
   loading,
   error,
   activeId,
+  plan = 'free',
   onOpenFolder,
   onOpenFile,
 }) {
@@ -79,6 +87,7 @@ export default function SearchResults({
           key={item.id}
           item={item}
           activeId={activeId}
+          plan={plan}
           onOpenFolder={onOpenFolder}
           onOpenFile={onOpenFile}
         />

@@ -1,8 +1,13 @@
 node_modules
 dist
 dist-ssr
+psicoteca-dist.zip
 *.local
 .vite
+
+# Variables de entorno locales (Supabase, etc.). No versionar.
+# Nota: .env.production SÍ se versiona (solo contiene la URL pública de la API).
+.env
 
 # Logs
 npm-debug.log*

@@ -6,6 +6,11 @@ del frontend. El árbol se reconstruye en memoria a partir de la lista de
 adyacencia (`items.parent_id`): se cargan todas las carpetas de una vez y se
 enlazan padres con hijos en una sola pasada (O(n)). Con ~3.8k carpetas esto es
 instantáneo y evita consultas recursivas.
+
+Estrategia de contenido Pro (gating visual): NO se ocultan carpetas. Se envía el
+árbol COMPLETO con el flag `is_premium` por nodo; el frontend muestra el candado
+y bloquea la navegación. La seguridad real vive en el endpoint de contenido
+(`/api/items/{id}/open`), no aquí.
 """
 from __future__ import annotations
 
@@ -33,7 +38,7 @@ def get_tree(session: Session = Depends(get_session)) -> List[dict]:
         session.execute(
             text(
                 """
-                SELECT id, name, parent_id, path, depth
+                SELECT id, name, parent_id, path, depth, is_premium
                 FROM items
                 WHERE is_folder = 1 AND trashed = 0
                 ORDER BY depth, name COLLATE NOCASE
@@ -51,6 +56,7 @@ def get_tree(session: Session = Depends(get_session)) -> List[dict]:
             "name": r["name"],
             "path": r["path"],
             "depth": r["depth"],
+            "is_premium": bool(r["is_premium"]),
             "child_count": 0,
             "children": [],
         }

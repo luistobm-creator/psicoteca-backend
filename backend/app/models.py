@@ -48,6 +48,12 @@ class Item(SQLModel, table=True):
     # Borrado lógico: 1 cuando un elemento ya no aparece en Drive.
     trashed: bool = Field(default=False, index=True)
 
+    # Contenido Pro (curado manualmente con scripts/mark_premium.py). El sync NO
+    # lo modifica —se excluye del upsert—, así que la curaduría persiste entre
+    # sincronizaciones. Alimenta el "gating visual" del frontend y el 403 del
+    # endpoint de contenido.
+    is_premium: bool = Field(default=False)
+
     # Marca temporal (ISO) de la última vez que el sync tocó esta fila.
     synced_at: Optional[str] = None
 

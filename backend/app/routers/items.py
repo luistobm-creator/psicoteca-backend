@@ -1,17 +1,27 @@
 """
-GET /api/folders/{folder_id}/items
+Contenido de carpetas y apertura de un item.
 
-Devuelve el contenido paginado (carpetas + archivos) de los hijos DIRECTOS de
-una carpeta, usando la lista de adyacencia (`parent_id`). Las carpetas se
-listan primero y luego los archivos, ambos en orden alfabético.
+GET /api/folders/{folder_id}/items
+    Contenido paginado (carpetas + archivos) de los hijos DIRECTOS de una
+    carpeta. Envía TODOS los items (incluidos los Pro) con su flag `is_premium`;
+    NO filtra por plan. El bloqueo es visual (frontend).
+
+GET /api/items/{item_id}/content
+    Proxy autenticado del contenido real del archivo: lo descarga con la Service
+    Account y lo streamea al cliente. Es el ÚNICO punto que sirve el fichero y
+    donde se aplica la seguridad de plan (403 si es Pro y el usuario no lo es).
+    Los enlaces de Drive nunca llegan al navegador.
 """
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy import func
 from sqlmodel import Session, select
 
+from app.auth import get_user_plan
 from app.database import get_session
+from app.drive_client import get_drive_service, iter_media
 from app.models import Item
 from app.schemas import FolderItemsResponse, ItemRead, PageMeta
 
@@ -21,7 +31,7 @@ router = APIRouter(prefix="/api", tags=["items"])
 @router.get(
     "/folders/{folder_id}/items",
     response_model=FolderItemsResponse,
-    summary="Contenido paginado de una carpeta",
+    summary="Contenido paginado de una carpeta (todos los items, con flag Pro)",
 )
 def get_folder_items(
     folder_id: str,
@@ -70,4 +80,64 @@ def get_folder_items(
         folder=ItemRead.model_validate(folder),
         pagination=pagination,
         items=[ItemRead.model_validate(i) for i in items],
+    )
+
+
+# Los documentos nativos de Google (Docs/Sheets/Slides) no se pueden descargar
+# tal cual: se EXPORTAN a PDF para previsualizarlos.
+_GOOGLE_NATIVE_PREFIX = "application/vnd.google-apps."
+_EXPORT_MIME = "application/pdf"
+
+
+def _safe_filename(name: str, native: bool) -> str:
+    """Nombre de archivo seguro para la cabecera Content-Disposition (ASCII)."""
+    safe = "".join(
+        c for c in (name or "") if c.isascii() and (c.isalnum() or c in " ._-()")
+    ).strip()
+    safe = safe or "archivo"
+    if native and not safe.lower().endswith(".pdf"):
+        safe += ".pdf"
+    return safe
+
+
+@router.get(
+    "/items/{item_id}/content",
+    summary="Proxy del contenido real del archivo (403 si es Pro y el plan no lo es)",
+)
+def get_item_content(
+    item_id: str,
+    session: Session = Depends(get_session),
+    plan: str = Depends(get_user_plan),
+) -> StreamingResponse:
+    """Sirve el archivo a través del backend usando la Service Account.
+
+    Es el ÚNICO punto que entrega el contenido real. Los enlaces de Drive NUNCA
+    llegan al cliente: así, aunque los archivos de Drive sean privados, el usuario
+    autorizado puede verlos, y uno no autorizado recibe 403 (no un enlace robable).
+    """
+    item = session.get(Item, item_id)
+    if item is None or item.trashed:
+        raise HTTPException(status_code=404, detail=f"Elemento '{item_id}' no encontrado.")
+    if item.is_folder:
+        raise HTTPException(
+            status_code=400, detail="Una carpeta no tiene contenido descargable."
+        )
+
+    # Seguridad (antes de abrir el stream): el contenido Pro exige plan Pro.
+    if item.is_premium and plan != "pro":
+        raise HTTPException(status_code=403, detail="Contenido exclusivo del plan Pro.")
+
+    native = item.mime_type.startswith(_GOOGLE_NATIVE_PREFIX)
+    export_mime = _EXPORT_MIME if native else None
+    content_type = _EXPORT_MIME if native else (item.mime_type or "application/octet-stream")
+
+    stream = iter_media(get_drive_service(), item.id, export_mime)
+    return StreamingResponse(
+        stream,
+        media_type=content_type,
+        headers={
+            "Content-Disposition": f'inline; filename="{_safe_filename(item.name, native)}"',
+            "Cache-Control": "private, max-age=300",
+            "X-Content-Type-Options": "nosniff",
+        },
     )

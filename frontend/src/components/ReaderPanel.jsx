@@ -1,10 +1,53 @@
-import { X, ExternalLink } from './icons.jsx';
+import { useEffect, useState } from 'react';
+import { X, Lock } from './icons.jsx';
 import { fileType } from '../lib/fileType.js';
-import { drivePreviewUrl } from '../lib/drive.js';
+import * as api from '../api.js';
 
+// El contenido se sirve SIEMPRE por el proxy autenticado del backend
+// (`/api/items/{id}/content`): se descarga con el token de Supabase y se
+// incrusta como object URL. Ningún enlace de Drive llega al navegador. Si el
+// backend responde 403 (contenido Pro sin plan), se muestra el bloqueo.
 export default function ReaderPanel({ file, onClose }) {
   const { label, color } = fileType(file);
-  const src = drivePreviewUrl(file);
+  const [state, setState] = useState({
+    loading: true,
+    url: null,
+    error: null,
+    forbidden: false,
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    let objectUrl = null;
+    setState({ loading: true, url: null, error: null, forbidden: false });
+
+    api
+      .fetchContent(file.id)
+      .then(({ url }) => {
+        if (cancelled) {
+          URL.revokeObjectURL(url);
+          return;
+        }
+        objectUrl = url;
+        setState({ loading: false, url, error: null, forbidden: false });
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setState({
+          loading: false,
+          url: null,
+          error: err.message || 'No se pudo abrir el documento.',
+          forbidden: err.status === 403,
+        });
+      });
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [file.id]);
+
+  const { loading, url, error, forbidden } = state;
 
   return (
     <aside className="reader">
@@ -16,18 +59,6 @@ export default function ReaderPanel({ file, onClose }) {
           {file.name}
         </span>
         <div className="reader__actions">
-          {file.web_view_link && (
-            <a
-              className="iconbtn iconbtn--sm"
-              href={file.web_view_link}
-              target="_blank"
-              rel="noreferrer"
-              title="Abrir en Google Drive"
-              aria-label="Abrir en Google Drive"
-            >
-              <ExternalLink width={16} height={16} />
-            </a>
-          )}
           <button
             type="button"
             className="iconbtn iconbtn--sm"
@@ -41,35 +72,35 @@ export default function ReaderPanel({ file, onClose }) {
       </header>
 
       <div className="reader__frame">
-        {src ? (
+        {loading ? (
+          <div className="grid-state muted">Cargando…</div>
+        ) : forbidden ? (
+          <div className="reader__locked">
+            <span className="reader__lockicon" aria-hidden="true">
+              <Lock width={26} height={26} />
+            </span>
+            <p className="reader__lockedtitle">Contenido exclusivo Pro</p>
+            <p className="muted">Mejora tu plan para acceder a este documento.</p>
+          </div>
+        ) : error ? (
+          <div className="grid-state error">{error}</div>
+        ) : url ? (
           <iframe
             key={file.id}
             className="reader__iframe"
-            src={src}
+            src={url}
             title={file.name}
-            allow="autoplay; encrypted-media"
+            allow="autoplay; encrypted-media; fullscreen"
           />
         ) : (
-          <div className="grid-state muted">
-            Este elemento no se puede previsualizar.
-          </div>
+          <div className="grid-state muted">Este elemento no se puede previsualizar.</div>
         )}
       </div>
 
       <footer className="reader__foot">
         <span className="muted">
-          ¿No se ve? La vista previa usa tu sesión de Google Drive.
+          La vista previa se sirve de forma segura desde el servidor.
         </span>
-        {file.web_view_link && (
-          <a
-            className="link"
-            href={file.web_view_link}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Abrir en Drive
-          </a>
-        )}
       </footer>
     </aside>
   );

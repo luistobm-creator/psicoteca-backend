@@ -25,10 +25,12 @@ class ItemRead(BaseModel):
     size: Optional[int] = None
     modified_time: Optional[str] = None
     created_time: Optional[str] = None
-    web_view_link: Optional[str] = None
+    # NOTA: web_view_link (enlace público de Drive) ya NO se expone al cliente;
+    # el contenido se sirve por el proxy /api/items/{id}/content.
     icon_link: Optional[str] = None
     path: Optional[str] = None
     depth: Optional[int] = None
+    is_premium: bool = False          # contenido Pro (gating visual en el front)
 
 
 class TreeNode(BaseModel):
@@ -38,6 +40,7 @@ class TreeNode(BaseModel):
     name: str
     path: Optional[str] = None
     depth: Optional[int] = None
+    is_premium: bool = False         # carpeta Pro (candado en el Sidebar)
     child_count: int = 0             # nº de subcarpetas directas
     children: List["TreeNode"] = []
 

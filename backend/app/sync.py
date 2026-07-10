@@ -73,10 +73,14 @@ def _upsert_rows(conn, rows: list[dict]) -> None:
     if not rows:
         return
     base = sqlite_insert(Item.__table__)
+    # `is_premium` es curaduría manual: NO debe pisarse en cada sync (si se
+    # incluyera, el on_conflict lo resetearía al valor por defecto). Se preserva
+    # excluyéndolo del UPDATE; en filas nuevas toma su default (False).
+    _preserve = {"id", "is_premium"}
     update_cols = {
         col.name: getattr(base.excluded, col.name)
         for col in Item.__table__.columns
-        if col.name != "id"
+        if col.name not in _preserve
     }
     stmt = base.on_conflict_do_update(index_elements=["id"], set_=update_cols)
     conn.execute(stmt, rows)

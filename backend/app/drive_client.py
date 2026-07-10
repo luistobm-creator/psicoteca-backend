@@ -7,13 +7,16 @@ ante errores de cuota o transitorios.
 """
 from __future__ import annotations
 
+import io
 import json
 import logging
+import threading
 from typing import Iterator
 
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+from googleapiclient.http import MediaIoBaseDownload
 from tenacity import (
     retry,
     retry_if_exception,
@@ -162,3 +165,54 @@ def iter_children(service, folder_id: str, page_size: int) -> Iterator[dict]:
         page_token = response.get("nextPageToken")
         if not page_token:
             break
+
+
+# -----------------------------------------------------------------------------
+# Proxy de contenido: descarga del archivo real vía la Service Account.
+# -----------------------------------------------------------------------------
+_thread_local = threading.local()
+
+
+def get_drive_service():
+    """Servicio de Drive cacheado POR HILO.
+
+    googleapiclient/httplib2 no es thread-safe, así que cada hilo del threadpool
+    de la API construye (una vez) y reutiliza el suyo. Evita reconstruir el
+    cliente en cada petición sin compartir un mismo Http entre hilos.
+    """
+    svc = getattr(_thread_local, "drive_service", None)
+    if svc is None:
+        svc = build_drive_service()
+        _thread_local.drive_service = svc
+    return svc
+
+
+def iter_media(service, file_id: str, export_mime: str | None = None, chunk_size: int = 1024 * 1024):
+    """Descarga el contenido de un archivo de Drive por chunks (para streaming).
+
+    - `export_mime` no nulo → exporta un documento NATIVO de Google a ese tipo
+      (p. ej. application/pdf).
+    - En caso contrario descarga el binario tal cual (get_media).
+
+    Ante un error de Drive corta el stream y lo registra (la respuesta ya habrá
+    empezado, así que el cliente recibe contenido parcial en vez de un 500).
+    """
+    if export_mime:
+        request = service.files().export_media(fileId=file_id, mimeType=export_mime)
+    else:
+        request = service.files().get_media(fileId=file_id)
+
+    buf = io.BytesIO()
+    downloader = MediaIoBaseDownload(buf, request, chunksize=chunk_size)
+    try:
+        done = False
+        while not done:
+            _status, done = downloader.next_chunk(num_retries=3)
+            data = buf.getvalue()
+            buf.seek(0)
+            buf.truncate(0)
+            if data:
+                yield data
+    except HttpError as exc:
+        log.error("Drive get_media/export_media falló para %s: %s", file_id, exc)
+        return
