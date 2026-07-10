@@ -1,0 +1,65 @@
+# ============================================================
+#  Render Blueprint — Psicoteca API (FastAPI)
+#  Spec: https://render.com/docs/blueprint-spec
+#
+#  Uso: en Render -> New + -> Blueprint -> conecta este repositorio.
+#  Este archivo debe vivir en la RAÍZ del repo; `rootDir: backend` hace que el
+#  build y el arranque se ejecuten dentro de la carpeta backend/.
+#
+#  Si prefieres desplegar SOLO la carpeta backend/ como repo independiente,
+#  mueve este archivo dentro de backend/ y elimina la línea `rootDir: backend`.
+# ============================================================
+services:
+  - type: web
+    name: psicoteca-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    # Uvicorn escucha en 0.0.0.0 y toma el puerto de $PORT (obligatorio en Render).
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      # Versión de Python (usa una estable y bien soportada en Render).
+      - key: PYTHON_VERSION
+        value: "3.12.8"
+
+      # --- CORS: dominio de producción del frontend (Hostinger) ---
+      - key: CORS_ALLOW_ORIGINS
+        value: https://psicoteca.miceliocreate.com
+
+      # --- Carpeta raíz de Google Drive ---
+      - key: ROOT_FOLDER_NAME
+        value: PSICOTECA
+      # Recomendado: fija el ID exacto de la carpeta (se introduce en el panel).
+      - key: ROOT_FOLDER_ID
+        sync: false
+
+      # --- Credenciales de la Service Account (SECRETO) ---
+      # Pega el contenido completo del credentials.json en el panel de Render.
+      - key: GOOGLE_CREDENTIALS_JSON
+        sync: false
+
+      # --- Fase 4: sincronización automática ---
+      - key: SCHEDULER_ENABLED
+        value: "true"
+      - key: SYNC_INTERVAL_MINUTES
+        value: "60"
+      - key: SYNC_ON_STARTUP
+        value: "true"
+      - key: SYNC_JITTER_SECONDS
+        value: "30"
+
+      # --- Opcional: token para el disparo manual POST /api/sync ---
+      - key: SYNC_TRIGGER_TOKEN
+        sync: false
+
+    # --- Disco persistente (OPCIONAL, solo planes de pago) ---
+    # El plan free tiene disco EFÍMERO: la BD se repuebla en cada arranque
+    # (SYNC_ON_STARTUP=true). Para persistir la caché entre despliegues, añade un
+    # disco y define DATABASE_PATH=/var/data/psicoteca.db
+    # disk:
+    #   name: psicoteca-data
+    #   mountPath: /var/data
+    #   sizeGB: 1

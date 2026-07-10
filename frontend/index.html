@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Psicoteca</title>
+    <meta name="description" content="Explorador de la biblioteca Psicoteca" />
+    <!-- Aplica el tema guardado ANTES de pintar, para evitar el parpadeo.
+         Por defecto: modo claro (interfaz luminosa). -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('psicoteca-theme-v2') || 'light';
+          document.documentElement.setAttribute('data-theme', t);
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'light');
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

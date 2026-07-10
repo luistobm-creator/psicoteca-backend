@@ -1,0 +1,24 @@
+# ============================================================
+#  Psicoteca - Backend (FastAPI + SQLite/FTS5)
+#  Versiones fijadas para builds reproducibles en la nube (Render).
+# ============================================================
+
+# --- Google Drive: autenticación y sincronización ---
+google-api-python-client==2.198.0    # Cliente oficial Google Drive API v3
+google-auth==2.55.2                  # Autenticación con Service Account
+tenacity==9.1.4                      # Reintentos con backoff ante cuota de API
+
+# --- Base de datos / ORM ---
+sqlmodel==0.0.39                     # ORM (SQLAlchemy 2.0 + Pydantic v2)
+SQLAlchemy==2.0.51                   # Motor de BD (se usa directamente en el código)
+
+# --- Configuración ---
+pydantic-settings==2.14.2            # Carga de configuración desde entorno / .env
+python-dotenv==1.2.2                 # Lectura de variables de entorno
+
+# --- API REST (Fase 2) ---
+fastapi==0.139.0                     # Framework de la API
+uvicorn[standard]==0.51.0            # Servidor ASGI (lee el puerto de $PORT)
+
+# --- Automatización (Fase 4) ---
+apscheduler==3.11.3                  # Sincronización programada en segundo plano

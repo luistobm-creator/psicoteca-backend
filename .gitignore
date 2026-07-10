@@ -1,0 +1,41 @@
+# ============================================================
+#  Psicoteca — .gitignore raíz
+#  Protege secretos y artefactos al subir el proyecto a Git (Render).
+# ============================================================
+
+# --- SECRETOS: nunca subir ---
+credentials.json
+*credentials*.json
+.env
+.env.local
+backend/.env
+# (se conservan las plantillas: .env.example, frontend/.env.production)
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+backend/venv/
+backend/.venv/
+
+# --- Base de datos SQLite (caché regenerable por el sync) ---
+*.db
+*.db-wal
+*.db-shm
+
+# --- Node / build del frontend ---
+node_modules/
+frontend/dist/
+frontend/.vite/
+*.local
+
+# --- Config local de Claude Code (no versionar) ---
+.claude/
+
+# --- Editor / Sistema ---
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
