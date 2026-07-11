@@ -87,11 +87,9 @@ def _iter_users(base: str, headers: dict):
 
 
 def _plan_of(user: dict) -> str:
-    """Plan efectivo: Pro si app_metadata (pago) o user_metadata (dev) lo indican."""
-    app_meta = user.get("app_metadata") or {}
-    user_meta = user.get("user_metadata") or {}
-    is_pro = app_meta.get("plan") == "pro" or user_meta.get("plan") == "pro"
-    return "pro" if is_pro else "free"
+    """Plan efectivo: Pro si `app_metadata.plan == "pro"` (ÚNICA fuente de verdad,
+    igual que el backend en app/auth.py). `user_metadata` ya NO otorga acceso."""
+    return "pro" if (user.get("app_metadata") or {}).get("plan") == "pro" else "free"
 
 
 def find_user_by_email(base: str, headers: dict, email: str) -> dict | None:
@@ -103,11 +101,11 @@ def find_user_by_email(base: str, headers: dict, email: str) -> dict | None:
 
 
 def set_plan(base: str, headers: dict, user_id: str, pro: bool) -> bool:
-    """Fija el plan en app_metadata (fuente de verdad server-side).
+    """Fija el plan en app_metadata (ÚNICA fuente de verdad server-side).
 
-    Al REVOCAR se limpia también user_metadata.plan, por si la cuenta usó el toggle
-    de desarrollo (togglePlan escribe ahí). Supabase FUSIONA las claves, así que no
-    se pierden provider/providers ni otros campos.
+    Al REVOCAR limpia también el legado `user_metadata.plan` (del viejo toggle de
+    dev, que ya NO otorga acceso) para no dejar datos obsoletos. Supabase FUSIONA
+    las claves, así que no se pierden provider/providers ni otros campos.
     """
     body: dict = {"app_metadata": {"plan": "pro" if pro else "free"}}
     if not pro:
@@ -153,9 +151,7 @@ def show_pro_list() -> None:
     pros = [u for u in _iter_users(base, headers) if _plan_of(u) == "pro"]
     print(f"Cuentas con plan Pro: {len(pros)}")
     for user in sorted(pros, key=lambda u: (u.get("email") or "")):
-        paid = (user.get("app_metadata") or {}).get("plan") == "pro"
-        source = "pago/cortesía (app_metadata)" if paid else "toggle dev (user_metadata)"
-        print(f"  • {user.get('email')}   [{source}]")
+        print(f"  • {user.get('email')}")
 
 
 def main() -> None:

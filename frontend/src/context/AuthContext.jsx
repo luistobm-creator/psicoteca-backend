@@ -16,10 +16,11 @@ import { supabase } from '../lib/supabaseClient.js';
 // pestañas). La persistencia la gestiona el propio cliente de Supabase
 // (localStorage), no este componente.
 //
-// Nota sobre el plan (free/pro): el plan de PAGO lo fija el webhook de Stripe en
-// app_metadata (controlado por el servidor, NO editable por el usuario). El
-// toggle de desarrollo (setPlan/togglePlan) sigue escribiendo en user_metadata;
-// mapSupabaseUser considera Pro si cualquiera de los dos lo indica.
+// Nota sobre el plan (free/pro): lo fija el servidor (webhook de Stripe / Admin
+// API) en app_metadata, que el usuario NO puede modificar. Es la ÚNICA fuente de
+// verdad: NO se mira user_metadata (el cliente sí puede escribir ahí, así que
+// confiar en él sería un backdoor para auto-asignarse Pro). El backend aplica la
+// misma regla en app/auth.py.
 // ============================================================================
 
 export const AuthContext = createContext(null);
@@ -38,10 +39,10 @@ function mapSupabaseUser(u) {
   const appMeta = u.app_metadata || {};
   const name =
     meta.name || meta.full_name || (u.email ? u.email.split('@')[0] : 'Usuario');
-  // Fuente de verdad del plan de PAGO: app_metadata, que solo puede escribir el
-  // servidor (el webhook de Stripe). Se mantiene el respaldo en user_metadata
-  // para el toggle de desarrollo (togglePlan/setPlan).
-  const isPro = appMeta.plan === 'pro' || meta.plan === 'pro';
+  // Fuente de verdad del plan de PAGO: app_metadata, que SOLO puede escribir el
+  // servidor (webhook de Stripe / Admin API). NO se mira user_metadata: es
+  // editable por el cliente y confiar en él sería un backdoor de Pro.
+  const isPro = appMeta.plan === 'pro';
   return {
     id: u.id,
     name,
@@ -140,22 +141,6 @@ export function AuthProvider({ children }) {
     setUser(mapSupabaseUser(data.user ?? data.session?.user ?? null));
   }, []);
 
-  // Cambia el plan y lo persiste en Supabase (user_metadata). Simulación de
-  // upgrade hasta integrar Stripe (ver nota de cabecera).
-  const setPlan = useCallback(async (plan) => {
-    const normalized = plan === 'pro' ? 'pro' : 'free';
-    const { data, error } = await supabase.auth.updateUser({
-      data: { plan: normalized },
-    });
-    if (error) throw new Error(translateAuthError(error.message));
-    setUser(mapSupabaseUser(data.user));
-  }, []);
-
-  const togglePlan = useCallback(async () => {
-    if (!user) return;
-    await setPlan(user.plan === 'pro' ? 'free' : 'pro');
-  }, [user, setPlan]);
-
   const value = useMemo(
     () => ({
       user,
@@ -166,10 +151,8 @@ export function AuthProvider({ children }) {
       register,
       logout,
       refreshUser,
-      setPlan,
-      togglePlan,
     }),
-    [user, loading, login, register, logout, refreshUser, setPlan, togglePlan]
+    [user, loading, login, register, logout, refreshUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -25,15 +25,14 @@ from app.config import settings
 def plan_from_user(user: dict) -> str:
     """Deriva el plan de un objeto usuario de Supabase (misma regla que el front).
 
-    Fuente de verdad del plan de pago: `app_metadata` (lo escribe el webhook y el
-    usuario no puede modificarlo). Se acepta también `user_metadata` por el toggle
-    de desarrollo.
+    ÚNICA fuente de verdad del plan de pago: `app_metadata.plan`, que solo escribe
+    el servidor (webhook de Stripe / Admin API) y el usuario NO puede modificar. NO
+    se mira `user_metadata`: el cliente puede escribir ahí con
+    `supabase.auth.updateUser`, así que confiar en él dejaría que un usuario Free se
+    auto-asignara Pro. Falla cerrado: cualquier otro caso → 'free'.
     """
     app_meta = user.get("app_metadata") or {}
-    user_meta = user.get("user_metadata") or {}
-    if app_meta.get("plan") == "pro" or user_meta.get("plan") == "pro":
-        return "pro"
-    return "free"
+    return "pro" if app_meta.get("plan") == "pro" else "free"
 
 
 def get_user_plan(authorization: str | None = Header(default=None)) -> str:
