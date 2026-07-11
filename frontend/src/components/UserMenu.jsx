@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, Crown, Settings, LogOut, Sparkles } from './icons.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
-import { startProCheckout } from '../lib/stripe.js';
+import { startProCheckout, openBillingPortal } from '../lib/stripe.js';
 
 // Menú de cuenta del usuario autenticado. Todos los datos provienen del
 // AuthContext (ya no hay usuario "quemado"). Solo se muestra cuando hay sesión;
 // el Header decide cuándo renderizarlo.
 export default function UserMenu() {
-  const { user, plan, logout, togglePlan } = useAuth();
+  const { user, plan, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const isPro = plan === 'pro';
@@ -15,6 +15,10 @@ export default function UserMenu() {
   // Estado del flujo de pago (upgrade a Pro vía Stripe Checkout).
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState(null);
+
+  // Estado del portal de cliente (gestionar la suscripción en Stripe).
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [portalError, setPortalError] = useState(null);
 
   // Cerrar al hacer clic fuera o con Escape.
   useEffect(() => {
@@ -43,6 +47,19 @@ export default function UserMenu() {
     } catch (err) {
       setCheckoutError(err.message || 'No se pudo iniciar el pago.');
       setCheckoutLoading(false);
+    }
+  };
+
+  // "Gestionar plan Pro": abre el portal de cliente de Stripe (gestionar/cancelar).
+  const handleManagePlan = async () => {
+    setPortalError(null);
+    setPortalLoading(true);
+    try {
+      // Si tiene éxito, el navegador navega a Stripe y no vuelve aquí.
+      await openBillingPortal();
+    } catch (err) {
+      setPortalError(err.message || 'No se pudo abrir el portal de pagos.');
+      setPortalLoading(false);
     }
   };
 
@@ -112,25 +129,38 @@ export default function UserMenu() {
               )}
             </>
           ) : (
-            <button
-              type="button"
-              className="usermenu__item"
-              onClick={() => {
-                togglePlan();
-                setOpen(false);
-              }}
-              role="menuitem"
-            >
-              <Crown width={16} height={16} />
-              Gestionar plan Pro
-            </button>
+            <>
+              <button
+                type="button"
+                className="usermenu__item"
+                onClick={handleManagePlan}
+                disabled={portalLoading}
+                role="menuitem"
+              >
+                <Crown width={16} height={16} />
+                {portalLoading ? 'Abriendo portal…' : 'Gestionar plan Pro'}
+              </button>
+              {portalError && (
+                <div className="usermenu__error" role="alert">
+                  {portalError}
+                </div>
+              )}
+            </>
           )}
 
           <div className="usermenu__sep" />
 
-          <button type="button" className="usermenu__item" role="menuitem">
+          <button
+            type="button"
+            className="usermenu__item usermenu__item--soon"
+            role="menuitem"
+            disabled
+            aria-disabled="true"
+            title="Disponible próximamente"
+          >
             <Settings width={16} height={16} />
             Configuración
+            <span className="usermenu__soon">Próximamente</span>
           </button>
           <button
             type="button"

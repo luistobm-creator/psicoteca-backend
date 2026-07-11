@@ -489,6 +489,28 @@ a {
   color: var(--text-muted);
   flex: 0 0 auto;
 }
+/* Ítem deshabilitado (función aún no disponible): sin hover ni cursor de clic. */
+.usermenu__item:disabled,
+.usermenu__item--soon {
+  cursor: default;
+  opacity: 0.6;
+}
+.usermenu__item:disabled:hover,
+.usermenu__item--soon:hover {
+  background: transparent;
+}
+.usermenu__soon {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
 .usermenu__sep {
   height: 1px;
   background: var(--border);

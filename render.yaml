@@ -68,7 +68,10 @@ services:
       # --- Fase 2: Pagos con Stripe (se pegan en el panel) ---
       - key: STRIPE_SECRET_KEY          # sk_live_… / sk_test_…  (SECRETO)
         sync: false
-      - key: STRIPE_PRICE_ID            # price_… del plan Pro (mismo modo que la key)
+      # Prices del plan Pro: YA tienen valor por defecto en app/config.py (anual y
+      # mensual). Esta variable es OPCIONAL (override del Price anual, p. ej.
+      # test→live). Para override del mensual, añade STRIPE_PRICE_ID_MONTHLY.
+      - key: STRIPE_PRICE_ID            # (legado/opcional) override del Price anual
         sync: false
       # whsec_ del ENDPOINT del Dashboard de Stripe (NO el de `stripe listen`).
       - key: STRIPE_WEBHOOK_SECRET

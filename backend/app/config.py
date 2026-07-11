@@ -99,7 +99,12 @@ class Settings(BaseSettings):
 
     # --- Pagos: Stripe + validación de usuario Supabase (Fase 2) ---
     stripe_secret_key: str | None = None    # sk_test_… / sk_live_… (SECRETO, solo backend)
-    stripe_price_id: str | None = None      # price_… del plan Pro (recurrente, en MXN)
+    stripe_price_id: str | None = None      # (legado) price_… anual; respaldo del anual
+    # Prices recurrentes por intervalo. NO son secretos (identifican un Price, no dan
+    # acceso a la cuenta), así que se versionan con un valor por defecto y se pueden
+    # sobreescribir por env (STRIPE_PRICE_ID_ANNUAL / STRIPE_PRICE_ID_MONTHLY).
+    stripe_price_id_annual: str = "price_1TrcxWRuAw6vy8agwjLPThxm"    # $199 MXN/año
+    stripe_price_id_monthly: str = "price_1Ts4kdRuAw6vy8ag1fqaA0ux"  # $39 MXN/mes
     stripe_webhook_secret: str | None = None  # whsec_… verifica la firma del webhook (del panel o `stripe listen`)
     supabase_url: str | None = None         # https://<ref>.supabase.co
     supabase_anon_key: str | None = None    # anon/publishable key (valida el token del usuario)

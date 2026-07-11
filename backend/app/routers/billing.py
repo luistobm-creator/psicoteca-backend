@@ -69,7 +69,7 @@ def _supabase_user(authorization: str | None) -> dict:
     return user
 
 
-def _set_supabase_plan_pro(user_id: str) -> None:
+def _set_supabase_plan_pro(user_id: str, stripe_customer_id: str | None = None) -> None:
     """Marca a un usuario como Pro escribiendo `plan: "pro"` en su app_metadata.
 
     Se usa app_metadata (NO user_metadata) porque es controlado por el servidor:
@@ -77,11 +77,18 @@ def _set_supabase_plan_pro(user_id: str) -> None:
     la SERVICE ROLE key (la anon no puede tocar a otros usuarios), llamando a la
     Admin API de Supabase. Supabase fusiona las claves de app_metadata, así que
     no se pierde `provider`/`providers` ni otros campos existentes.
+
+    Si se pasa `stripe_customer_id`, se guarda también en app_metadata: así el
+    portal de cliente (gestionar la suscripción) localiza el Customer de Stripe
+    directamente, sin depender de una búsqueda por email.
     """
     base = _require(settings.supabase_url, "SUPABASE_URL").rstrip("/")
     service_key = _require(
         settings.supabase_service_role_key, "SUPABASE_SERVICE_ROLE_KEY"
     )
+    app_metadata: dict = {"plan": "pro"}
+    if stripe_customer_id:
+        app_metadata["stripe_customer_id"] = stripe_customer_id
     try:
         resp = requests.put(
             f"{base}/auth/v1/admin/users/{user_id}",
@@ -90,7 +97,7 @@ def _set_supabase_plan_pro(user_id: str) -> None:
                 "Authorization": f"Bearer {service_key}",
                 "Content-Type": "application/json",
             },
-            json={"app_metadata": {"plan": "pro"}},
+            json={"app_metadata": app_metadata},
             timeout=10,
         )
     except requests.RequestException:
@@ -113,21 +120,49 @@ def _set_supabase_plan_pro(user_id: str) -> None:
         )
 
 
+def _price_for_interval(interval: str) -> str:
+    """Devuelve el Price de Stripe según el intervalo de cobro solicitado.
+
+    'monthly' → Price mensual; cualquier otro valor ('annual' por defecto) → Price
+    anual. La fuente de verdad son los valores versionados en config.py
+    (STRIPE_PRICE_ID_ANNUAL / STRIPE_PRICE_ID_MONTHLY); el legado STRIPE_PRICE_ID
+    solo actúa de respaldo del anual si este quedara vacío.
+    """
+    if interval == "monthly":
+        return _require(settings.stripe_price_id_monthly, "STRIPE_PRICE_ID_MONTHLY")
+    return _require(
+        settings.stripe_price_id_annual or settings.stripe_price_id,
+        "STRIPE_PRICE_ID_ANNUAL",
+    )
+
+
 @router.post(
     "/create-checkout-session",
     summary="Crea una sesión de Stripe Checkout para el plan Pro (suscripción)",
 )
-def create_checkout_session(authorization: str | None = Header(default=None)) -> dict:
+async def create_checkout_session(
+    request: Request, authorization: str | None = Header(default=None)
+) -> dict:
     # 1) Identificar al usuario a partir del token de Supabase.
     user = _supabase_user(authorization)
     user_id = user["id"]
     user_email = user.get("email")
 
-    # 2) Configurar Stripe.
-    stripe.api_key = _require(settings.stripe_secret_key, "STRIPE_SECRET_KEY")
-    price_id = _require(settings.stripe_price_id, "STRIPE_PRICE_ID")
+    # 2) Intervalo de cobro solicitado (cuerpo opcional {"interval": "annual"|"monthly"}).
+    #    Sin cuerpo, cuerpo vacío o no-JSON → plan anual por defecto.
+    interval = "annual"
+    try:
+        body = await request.json()
+        if isinstance(body, dict) and body.get("interval"):
+            interval = str(body["interval"]).strip().lower()
+    except Exception:
+        pass
 
-    # 3) Crear la sesión de Checkout (modo suscripción).
+    # 3) Configurar Stripe.
+    stripe.api_key = _require(settings.stripe_secret_key, "STRIPE_SECRET_KEY")
+    price_id = _price_for_interval(interval)
+
+    # 4) Crear la sesión de Checkout (modo suscripción).
     try:
         session = stripe.checkout.Session.create(
             mode="subscription",
@@ -143,7 +178,7 @@ def create_checkout_session(authorization: str | None = Header(default=None)) ->
     except stripe.error.StripeError as exc:
         raise HTTPException(status_code=502, detail=f"Error de Stripe: {exc.user_message or str(exc)}")
 
-    # 4) Devolver la URL (y el id) para que el frontend redirija.
+    # 5) Devolver la URL (y el id) para que el frontend redirija.
     return {"url": session.url, "id": session.id}
 
 
@@ -195,11 +230,72 @@ async def stripe_webhook(request: Request) -> dict:
             )
             return {"received": True, "updated": False}
 
+        # id del Customer de Stripe: en modo suscripción llega como string en
+        # `customer`. Lo guardamos para poder abrir el portal de cliente después.
+        customer = session.get("customer")
+        customer_id = customer if isinstance(customer, str) else None
+
         # Idempotente: fijar el plan Pro varias veces es inofensivo (Stripe puede
         # reenviar el mismo evento).
-        _set_supabase_plan_pro(user_id)
+        _set_supabase_plan_pro(user_id, customer_id)
         logger.info("Plan Pro activado para el usuario %s.", user_id)
         return {"received": True, "updated": True}
 
     # 4) Otros eventos: acuse de recibo sin efectos.
     return {"received": True}
+
+
+@router.post(
+    "/create-portal-session",
+    summary="Crea una sesión del portal de cliente de Stripe (gestionar suscripción)",
+)
+def create_portal_session(authorization: str | None = Header(default=None)) -> dict:
+    """Abre el Customer Portal de Stripe para que el usuario gestione su plan Pro
+    (método de pago, facturas, cancelar/reactivar la suscripción).
+
+    Necesita el Customer de Stripe del usuario. Se toma de app_metadata
+    (`stripe_customer_id`, que guarda el webhook al activar el plan). Como respaldo
+    —p. ej. suscripciones anteriores a que guardáramos ese id— se busca por email
+    en Stripe. Si no hay Customer (p. ej. un Pro dado de alta a mano, sin pago en
+    Stripe), se responde 404 con un mensaje claro.
+    """
+    # 1) Identificar al usuario a partir del token de Supabase.
+    user = _supabase_user(authorization)
+    user_email = user.get("email")
+
+    # 2) Configurar Stripe.
+    stripe.api_key = _require(settings.stripe_secret_key, "STRIPE_SECRET_KEY")
+
+    # 3) Localizar el Customer de Stripe (primero el id guardado; si no, por email).
+    app_metadata = user.get("app_metadata") or {}
+    customer_id = app_metadata.get("stripe_customer_id")
+    if not customer_id and user_email:
+        try:
+            found = stripe.Customer.list(email=user_email, limit=1)
+        except stripe.error.StripeError as exc:
+            raise HTTPException(
+                status_code=502, detail=f"Error de Stripe: {exc.user_message or str(exc)}"
+            )
+        if found.data:
+            customer_id = found.data[0].id
+    if not customer_id:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "No encontramos una suscripción de Stripe asociada a tu cuenta. "
+                "Si activaste Pro por otro medio, contáctanos."
+            ),
+        )
+
+    # 4) Crear la sesión del portal y devolver su URL (el frontend redirige).
+    try:
+        session = stripe.billing_portal.Session.create(
+            customer=customer_id,
+            return_url=f"{settings.frontend_base_url}/app",
+        )
+    except stripe.error.StripeError as exc:
+        raise HTTPException(
+            status_code=502, detail=f"Error de Stripe: {exc.user_message or str(exc)}"
+        )
+
+    return {"url": session.url}

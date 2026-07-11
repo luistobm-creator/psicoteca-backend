@@ -32,30 +32,29 @@ export function getStripe() {
   return stripePromise;
 }
 
-/**
- * Inicia el Checkout de Stripe para mejorar a Pro y redirige el navegador a la
- * página de pago. Si todo va bien, la función no "retorna" (la pestaña navega a
- * Stripe). Lanza Error (mensaje en español) si algo falla antes de redirigir.
- */
-export async function startProCheckout() {
+// Petición POST autenticada al backend de pagos. Adjunta el token de Supabase,
+// normaliza los errores a Error(mensaje en español) y devuelve el JSON de la
+// respuesta. `loginError` es el mensaje que se lanza si no hay sesión activa.
+async function billingRequest(path, { body, loginError } = {}) {
   // 1) Token del usuario actual de Supabase.
   const {
     data: { session },
   } = await supabase.auth.getSession();
   const accessToken = session?.access_token;
   if (!accessToken) {
-    throw new Error('Debes iniciar sesión para mejorar a Pro.');
+    throw new Error(loginError || 'Debes iniciar sesión para continuar.');
   }
 
-  // 2) Pedir la sesión de Checkout al backend (enviando el token).
+  // 2) Llamar al backend enviando el token.
   let res;
   try {
-    res = await fetch(`${API_BASE}/api/create-checkout-session`, {
+    res = await fetch(`${API_BASE}${path}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${accessToken}`,
       },
+      body: body ? JSON.stringify(body) : undefined,
     });
   } catch {
     throw new Error('No se pudo conectar con el servidor de pagos.');
@@ -64,18 +63,31 @@ export async function startProCheckout() {
   if (!res.ok) {
     let detail = `HTTP ${res.status}`;
     try {
-      const body = await res.json();
-      if (body?.detail) detail = body.detail;
+      const data = await res.json();
+      if (data?.detail) detail = data.detail;
     } catch {
       /* respuesta sin cuerpo JSON */
     }
     throw new Error(detail);
   }
 
-  const data = await res.json();
+  return res.json();
+}
 
-  // 3) Redirigir a Stripe. Preferimos la URL de la sesión (recomendado por
-  //    Stripe); si el backend solo devuelve el id, usamos Stripe.js como respaldo.
+/**
+ * Inicia el Checkout de Stripe para mejorar a Pro y redirige el navegador a la
+ * página de pago. `interval` elige el Price ('annual' por defecto, o 'monthly').
+ * Si todo va bien, la función no "retorna" (la pestaña navega a Stripe). Lanza
+ * Error (mensaje en español) si algo falla antes de redirigir.
+ */
+export async function startProCheckout(interval = 'annual') {
+  const data = await billingRequest('/api/create-checkout-session', {
+    body: { interval },
+    loginError: 'Debes iniciar sesión para mejorar a Pro.',
+  });
+
+  // Redirigir a Stripe. Preferimos la URL de la sesión (recomendado por Stripe);
+  // si el backend solo devuelve el id, usamos Stripe.js como respaldo.
   if (data.url) {
     window.location.href = data.url;
     return;
@@ -85,6 +97,23 @@ export async function startProCheckout() {
     if (!stripe) throw new Error('No se pudo inicializar Stripe.');
     const { error } = await stripe.redirectToCheckout({ sessionId: data.id });
     if (error) throw new Error(error.message || 'No se pudo abrir el Checkout.');
+    return;
+  }
+  throw new Error('Respuesta inválida del servidor de pagos.');
+}
+
+/**
+ * Abre el portal de cliente de Stripe (gestionar la suscripción: método de pago,
+ * facturas, cancelar/reactivar) y redirige el navegador a él. Lanza Error (en
+ * español) si el usuario no tiene una suscripción de Stripe o algo falla antes
+ * de redirigir.
+ */
+export async function openBillingPortal() {
+  const data = await billingRequest('/api/create-portal-session', {
+    loginError: 'Debes iniciar sesión para gestionar tu plan.',
+  });
+  if (data.url) {
+    window.location.href = data.url;
     return;
   }
   throw new Error('Respuesta inválida del servidor de pagos.');
