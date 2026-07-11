@@ -20,6 +20,7 @@ from sqlalchemy import text
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 from app.config import settings
+from app.curation import apply_declarative
 from app.database import engine, init_db
 from app.drive_client import (
     FOLDER_MIME,
@@ -221,6 +222,39 @@ def run_sync() -> None:
         _set_state(conn, "last_full_sync", run_ts)
         _set_state(conn, "total_folders", str(total_folders))
         _set_state(conn, "total_files", str(total_files))
+
+    # 3.5) Curaduría Pro DECLARATIVA. La BD se acaba de (re)poblar con
+    #      is_premium=False por defecto; volvemos a marcar el contenido Pro según
+    #      PREMIUM_FOLDERS. Sin este paso, en Render free (disco efímero) todo el
+    #      contenido Pro quedaría abierto tras cada arranque.
+    premium_names = settings.premium_folders_list
+    if premium_names:
+        with engine.begin() as conn:
+            applied = apply_declarative(conn, premium_names)
+        marked = sum(applied.values())
+        log.info(
+            "Curaduría Pro aplicada: %d elemento(s) en %d carpeta(s).",
+            marked,
+            len(applied),
+        )
+        for path, n in sorted(applied.items()):
+            log.info("  Pro: %-52s %5d elementos", path, n)
+        missing = [
+            name
+            for name in premium_names
+            if not any(p == name or p.endswith(f"/{name}") for p in applied)
+        ]
+        if missing:
+            log.warning(
+                "Curaduría Pro: estas carpetas de PREMIUM_FOLDERS no se "
+                "encontraron (revisa el nombre exacto): %s",
+                ", ".join(missing),
+            )
+    else:
+        log.warning(
+            "PREMIUM_FOLDERS vacío: no se marcó ningún contenido Pro "
+            "(toda la biblioteca queda libre)."
+        )
 
     # 4) Resumen final.
     with engine.connect() as conn:

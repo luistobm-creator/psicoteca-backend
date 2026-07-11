@@ -29,6 +29,16 @@ services:
       - key: CORS_ALLOW_ORIGINS
         value: https://psicoteca.miceliocreate.com
 
+      # --- Contenido Pro (curaduría declarativa; se re-aplica en CADA sync) ---
+      # Nombres de carpeta (coma-separados) cuyo subárbol es Pro. Fuente de verdad
+      # del gating: editar aquí basta para cambiar el catálogo Pro (no requiere
+      # re-desplegar). Imprescindible con disco efímero: repone el bloqueo tras
+      # cada arranque. Cuidado con el nombre EXACTO de la carpeta en Drive.
+      # "1012 TEST" (~9.955 items) es el NÚCLEO Pro (pruebas psicométricas de alto
+      # valor); va incluida a propósito. Editar aquí cambia el catálogo Pro.
+      - key: PREMIUM_FOLDERS
+        value: "DSM V,1012 TEST,E M D R Y BRAINSPOTTYNG,BIODESCODIFICACION Y BIONEUROEMOCION"
+
       # --- Carpeta raíz de Google Drive ---
       - key: ROOT_FOLDER_NAME
         value: PSICOTECA

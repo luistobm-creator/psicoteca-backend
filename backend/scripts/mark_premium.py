@@ -42,6 +42,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from sqlalchemy import text  # noqa: E402
 
+from app.config import settings  # noqa: E402
+from app.curation import find_folder_paths, set_premium_by_path  # noqa: E402
 from app.database import engine, init_db  # noqa: E402
 
 # La consola de Windows suele ser cp1252; forzamos UTF-8 para imprimir rutas con
@@ -52,53 +54,10 @@ for _stream in (sys.stdout, sys.stderr):
     except (AttributeError, ValueError):
         pass
 
-# Carpetas Pro por defecto (ajústalas a tu estrategia de negocio).
-CURATED_FOLDERS = [
-    "DSM V",
-    "E M D R Y BRAINSPOTTYNG",
-    "1012 TEST",
-]
-
-
-def _like_prefix(path: str) -> str:
-    """Prefijo seguro para LIKE (escapa %, _ y \\ con ESCAPE '\\')."""
-    escaped = path.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-    return f"{escaped}/%"
-
-
-def _find_folders(conn, name: str) -> list[dict]:
-    rows = (
-        conn.execute(
-            text(
-                "SELECT id, path FROM items "
-                "WHERE is_folder = 1 AND trashed = 0 AND name = :name COLLATE NOCASE"
-            ),
-            {"name": name},
-        )
-        .mappings()
-        .all()
-    )
-    return [dict(r) for r in rows]
-
-
-def _set_premium_by_path(
-    conn, path: str, value: int, files_only: bool = False
-) -> int:
-    """Marca/desmarca la carpeta y TODO su subárbol (prefijo de ruta).
-
-    Con `files_only=True` solo afecta a ARCHIVOS (is_folder = 0): las carpetas de
-    la rama quedan intactas (para poder navegar el catálogo aunque los documentos
-    finales estén bloqueados).
-    """
-    folder_clause = " AND is_folder = 0" if files_only else ""
-    result = conn.execute(
-        text(
-            "UPDATE items SET is_premium = :v "
-            f"WHERE (path = :p OR path LIKE :prefix ESCAPE '\\'){folder_clause}"
-        ),
-        {"v": value, "p": path, "prefix": _like_prefix(path)},
-    )
-    return result.rowcount or 0
+# Carpetas Pro por defecto: la MISMA lista que usa producción (PREMIUM_FOLDERS),
+# para no divergir. Nota: en producción el marcado se re-aplica en cada sync;
+# este script es sobre todo para pruebas locales o marcados ad-hoc.
+CURATED_FOLDERS = settings.premium_folders_list
 
 
 def apply(names: list[str], value: int, files_only: bool = False) -> None:
@@ -107,13 +66,13 @@ def apply(names: list[str], value: int, files_only: bool = False) -> None:
     scope = " (solo archivos, carpetas libres)" if files_only else " (carpeta + descendientes)"
     with engine.begin() as conn:
         for name in names:
-            folders = _find_folders(conn, name)
-            if not folders:
+            paths = find_folder_paths(conn, name)
+            if not paths:
                 print(f"  ! '{name}': no se encontró ninguna carpeta con ese nombre.")
                 continue
-            for f in folders:
-                affected = _set_premium_by_path(conn, f["path"], value, files_only)
-                print(f"  {verb} '{f['path']}' -> {affected} elementos{scope}.")
+            for path in paths:
+                affected = set_premium_by_path(conn, path, value, files_only)
+                print(f"  {verb} '{path}' -> {affected} elementos{scope}.")
 
 
 def show_list() -> None:

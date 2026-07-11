@@ -1319,6 +1319,52 @@ a {
   border: 0;
   display: block;
 }
+
+/* ---------- Visor PDF.js (scroll nativo, funciona en iOS/Safari) ---------- */
+.pdfviewer {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* scroll con inercia en iOS */
+  overscroll-behavior: contain;
+  background: var(--surface-2);
+}
+.pdfviewer__pages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 8px calc(24px + env(safe-area-inset-bottom, 0px));
+}
+.pdfpage-holder {
+  width: 100%;
+  max-width: 900px;
+  display: flex;
+  justify-content: center;
+}
+.pdfpage {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: #fff;
+  border-radius: 3px;
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.18);
+}
+.pdfviewer__state {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 13px;
+}
+.pdfviewer__state.error {
+  color: #e5484d;
+}
 .reader__foot {
   flex: 0 0 auto;
   display: flex;

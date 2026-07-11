@@ -44,6 +44,25 @@ class Settings(BaseSettings):
     # Límite de resultados por página al consultar la API de Drive.
     drive_page_size: int = 1000
 
+    # --- Contenido Pro (curaduría DECLARATIVA, re-aplicada en cada sync) -------
+    # Lista de NOMBRES de carpeta (separados por comas) cuyo subárbol es Pro. Es
+    # la ÚNICA fuente de verdad del gating: en cada sincronización el backend
+    # resetea `is_premium` y vuelve a marcar solo estas carpetas. Esto es
+    # imprescindible en Render free (disco EFÍMERO): tras reconstruir la BD, el
+    # contenido Pro queda bloqueado de nuevo automáticamente. Para cambiar el
+    # catálogo Pro basta con editar la env var PREMIUM_FOLDERS (no hace falta
+    # re-desplegar código ni tocar la BD a mano). Vacío = no hay contenido Pro.
+    # Carpetas Pro (fuente de verdad del gating). "1012 TEST" es el NÚCLEO de las
+    # suscripciones (pruebas psicométricas de alto valor, ~9.955 elementos), por
+    # eso va incluida pese a su tamaño. Para añadir más carpetas de alto valor
+    # basta con editar la env var PREMIUM_FOLDERS (no requiere re-deploy).
+    premium_folders: str = (
+        "DSM V,"
+        "1012 TEST,"
+        "E M D R Y BRAINSPOTTYNG,"
+        "BIODESCODIFICACION Y BIONEUROEMOCION"
+    )
+
     # --- CORS -----------------------------------------------------------------
     # Orígenes autorizados a consumir la API (separados por comas). En la nube se
     # sobreescribe con la variable de entorno CORS_ALLOW_ORIGINS. Incluye por
@@ -83,6 +102,11 @@ class Settings(BaseSettings):
     def cors_origins_list(self) -> list[str]:
         """Lista de orígenes CORS a partir de la cadena separada por comas."""
         return [o.strip() for o in self.cors_allow_origins.split(",") if o.strip()]
+
+    @property
+    def premium_folders_list(self) -> list[str]:
+        """Nombres de carpeta Pro a partir de la cadena separada por comas."""
+        return [f.strip() for f in self.premium_folders.split(",") if f.strip()]
 
 
 # Instancia única importable en todo el proyecto.

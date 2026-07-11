@@ -69,9 +69,11 @@ export function search(q, { limit = 50, offset = 0, foldersOnly = false } = {}) 
 
 /**
  * Descarga el contenido REAL del archivo desde el proxy autenticado del backend
- * (envía el token de Supabase) y lo entrega como object URL para incrustarlo en
- * un iframe. Lanza un Error con `.status === 403` si el usuario no tiene acceso
- * (contenido Pro). El llamador debe revocar la URL con URL.revokeObjectURL.
+ * (envía el token de Supabase). Devuelve el `blob`, su `type` y un object `url`.
+ * Los PDF se renderizan con PDF.js a partir del blob (scroll en móvil); el resto
+ * de tipos se incrustan con el object URL en un iframe. Lanza un Error con
+ * `.status === 403` si el usuario no tiene acceso (contenido Pro). El llamador
+ * debe revocar la URL con URL.revokeObjectURL.
  */
 export async function fetchContent(id) {
   const res = await fetch(
@@ -91,5 +93,5 @@ export async function fetchContent(id) {
     throw err;
   }
   const blob = await res.blob();
-  return { url: URL.createObjectURL(blob), type: blob.type };
+  return { url: URL.createObjectURL(blob), type: blob.type, blob };
 }
