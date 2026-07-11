@@ -63,6 +63,21 @@ class Settings(BaseSettings):
         "BIODESCODIFICACION Y BIONEUROEMOCION"
     )
 
+    # --- Aplanado de carpetas envoltorio redundantes --------------------------
+    # Al descomprimir los zips quedaron carpetas que contienen una sola subcarpeta
+    # (con frecuencia el mismo nombre salvo acentos) y ningún archivo, forzando un
+    # clic de más. Si está activo, el sync COLAPSA esos envoltorios en el caché (no
+    # toca Drive, que es de solo lectura): sube el contenido y descarta la capa
+    # sobrante. Es REVERSIBLE: al desactivarlo, la siguiente sync restaura la
+    # estructura original. Revisa antes qué se colapsaría con `python -m app.flatten`.
+    flatten_redundant_folders: bool = True
+    # Si True (recomendado), solo colapsa cuando el envoltorio y su única subcarpeta
+    # tienen el MISMO nombre (ignorando acentos/mayúsculas). Así se preserva el
+    # nombre visible y el que referencia PREMIUM_FOLDERS (gating Pro intacto). En
+    # False colapsa CUALQUIER carpeta con una sola subcarpeta y sin archivos (más
+    # agresivo: revísalo primero con el dry-run).
+    flatten_require_same_name: bool = True
+
     # --- CORS -----------------------------------------------------------------
     # Orígenes autorizados a consumir la API (separados por comas). En la nube se
     # sobreescribe con la variable de entorno CORS_ALLOW_ORIGINS. Incluye por

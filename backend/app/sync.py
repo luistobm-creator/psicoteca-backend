@@ -22,6 +22,7 @@ from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from app.config import settings
 from app.curation import apply_declarative, path_is_premium
 from app.database import engine, init_db
+from app.flatten import flatten_redundant
 from app.drive_client import (
     FOLDER_MIME,
     build_drive_service,
@@ -253,6 +254,25 @@ def run_sync() -> None:
         _set_state(conn, "last_full_sync", run_ts)
         _set_state(conn, "total_folders", str(total_folders))
         _set_state(conn, "total_files", str(total_files))
+
+    # 3.4) Aplanar carpetas envoltorio redundantes (p. ej. "DETECCION DE MENTIRAS"
+    #      que solo contiene "DETECCIÓN DE MENTIRAS"). Se hace sobre el caché
+    #      (Drive es de solo lectura) y ANTES de la curaduría Pro para que
+    #      is_premium se recalcule sobre las rutas ya aplanadas. Conserva la
+    #      carpeta exterior (id/nombre/is_premium intactos): el gating no se toca.
+    if settings.flatten_redundant_folders:
+        with engine.begin() as conn:
+            flat = flatten_redundant(
+                conn, require_same_name=settings.flatten_require_same_name
+            )
+        if flat["collapsed"]:
+            log.info(
+                "Aplanado: %d envoltorio(s) colapsado(s), %d elemento(s) reubicado(s).",
+                flat["collapsed"],
+                flat["moved"],
+            )
+        else:
+            log.info("Aplanado: sin carpetas envoltorio redundantes.")
 
     # 3.5) Curaduría Pro DECLARATIVA. La BD se acaba de (re)poblar con
     #      is_premium=False por defecto; volvemos a marcar el contenido Pro según
