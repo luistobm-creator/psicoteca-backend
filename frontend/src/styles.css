@@ -517,6 +517,100 @@ a {
   margin: 8px 4px;
 }
 
+/* ---------- Selector de plan (mensual / anual) ---------- */
+.plansel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px 0 14px;
+}
+.plansel__opt {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 11px 13px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.12s, background 0.12s;
+}
+.plansel__opt:hover {
+  border-color: var(--accent);
+}
+.plansel__opt.is-selected {
+  border-color: var(--accent);
+  background: var(--surface-2);
+}
+.plansel__radio {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  position: relative;
+  transition: border-color 0.12s;
+}
+.plansel__opt.is-selected .plansel__radio {
+  border-color: var(--accent);
+}
+.plansel__opt.is-selected .plansel__radio::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.plansel__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.plansel__top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.plansel__name {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text);
+}
+.plansel__badge {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  white-space: nowrap;
+}
+.plansel__note {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.plansel__price {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--text);
+  line-height: 1.12;
+}
+.plansel__unit {
+  font-weight: 500;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
 /* ---------- Etiqueta de contenido Pro ---------- */
 .probadge {
   display: inline-flex;

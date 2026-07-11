@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, Crown, Settings, LogOut, Sparkles } from './icons.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { startProCheckout, openBillingPortal } from '../lib/stripe.js';
+import PlanSelector from './PlanSelector.jsx';
 
 // Menú de cuenta del usuario autenticado. Todos los datos provienen del
 // AuthContext (ya no hay usuario "quemado"). Solo se muestra cuando hay sesión;
@@ -15,6 +16,7 @@ export default function UserMenu() {
   // Estado del flujo de pago (upgrade a Pro vía Stripe Checkout).
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState(null);
+  const [billingInterval, setBillingInterval] = useState('annual');
 
   // Estado del portal de cliente (gestionar la suscripción en Stripe).
   const [portalLoading, setPortalLoading] = useState(false);
@@ -43,7 +45,7 @@ export default function UserMenu() {
     setCheckoutLoading(true);
     try {
       // Si tiene éxito, el navegador navega a Stripe y no vuelve aquí.
-      await startProCheckout();
+      await startProCheckout(billingInterval);
     } catch (err) {
       setCheckoutError(err.message || 'No se pudo iniciar el pago.');
       setCheckoutLoading(false);
@@ -112,6 +114,7 @@ export default function UserMenu() {
 
           {!isPro ? (
             <>
+              <PlanSelector value={billingInterval} onChange={setBillingInterval} />
               <button
                 type="button"
                 className="usermenu__upgrade"

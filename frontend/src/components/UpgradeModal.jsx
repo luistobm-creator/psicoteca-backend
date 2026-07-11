@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Lock, Sparkles, X } from './icons.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { startProCheckout } from '../lib/stripe.js';
+import PlanSelector from './PlanSelector.jsx';
 
 // Modal que aparece cuando un usuario sin plan Pro intenta abrir contenido Pro.
 // Ofrece el flujo de "Mejorar a Pro" (o iniciar sesión, si es anónimo).
@@ -11,6 +12,7 @@ export default function UpgradeModal({ item, onClose, reason = 'content' }) {
   const isDownload = reason === 'download';
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [billingInterval, setBillingInterval] = useState('annual');
 
   useEffect(() => {
     const onKey = (e) => {
@@ -25,7 +27,7 @@ export default function UpgradeModal({ item, onClose, reason = 'content' }) {
     setLoading(true);
     try {
       // Si tiene éxito, el navegador navega a Stripe y no vuelve aquí.
-      await startProCheckout();
+      await startProCheckout(billingInterval);
     } catch (err) {
       setError(err.message || 'No se pudo iniciar el pago.');
       setLoading(false);
@@ -79,6 +81,7 @@ export default function UpgradeModal({ item, onClose, reason = 'content' }) {
 
         {isAuthenticated ? (
           <>
+            <PlanSelector value={billingInterval} onChange={setBillingInterval} />
             <button
               type="button"
               className="modal__cta"
