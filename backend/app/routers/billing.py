@@ -69,8 +69,8 @@ def _supabase_user(authorization: str | None) -> dict:
     return user
 
 
-def _set_supabase_plan_pro(user_id: str, stripe_customer_id: str | None = None) -> None:
-    """Marca a un usuario como Pro escribiendo `plan: "pro"` en su app_metadata.
+def _set_supabase_plan(user_id: str, plan: str, stripe_customer_id: str | None = None) -> None:
+    """Fija el plan del usuario en `app_metadata.plan` (`"pro"` o `"free"`).
 
     Se usa app_metadata (NO user_metadata) porque es controlado por el servidor:
     el usuario no puede modificarlo desde el cliente. Para escribirlo hace falta
@@ -86,7 +86,7 @@ def _set_supabase_plan_pro(user_id: str, stripe_customer_id: str | None = None) 
     service_key = _require(
         settings.supabase_service_role_key, "SUPABASE_SERVICE_ROLE_KEY"
     )
-    app_metadata: dict = {"plan": "pro"}
+    app_metadata: dict = {"plan": plan}
     if stripe_customer_id:
         app_metadata["stripe_customer_id"] = stripe_customer_id
     try:
@@ -107,8 +107,9 @@ def _set_supabase_plan_pro(user_id: str, stripe_customer_id: str | None = None) 
     if resp.status_code not in (200, 201):
         # Log del detalle (solo servidor) para diagnosticar rechazos del Admin API.
         logger.error(
-            "Supabase Admin API %s al fijar el plan Pro: %s",
+            "Supabase Admin API %s al fijar el plan '%s': %s",
             resp.status_code,
+            plan,
             resp.text[:300],
         )
         raise HTTPException(
@@ -184,11 +185,12 @@ async def create_checkout_session(
 
 @router.post(
     "/webhook",
-    summary="Webhook de Stripe: activa el plan Pro tras un pago exitoso",
+    summary="Webhook de Stripe: activa/desactiva el plan Pro según la suscripción",
 )
 async def stripe_webhook(request: Request) -> dict:
-    """Recibe los eventos de Stripe y, ante `checkout.session.completed`, activa
-    el plan Pro del usuario correspondiente.
+    """Recibe los eventos de Stripe y ajusta el plan del usuario en Supabase:
+    `checkout.session.completed` activa Pro; `customer.subscription.deleted` (o
+    `customer.subscription.updated` a estado canceled/unpaid) lo devuelve a Free.
 
     Seguridad: se verifica la FIRMA del evento con STRIPE_WEBHOOK_SECRET usando el
     cuerpo CRUDO tal cual llegó (no un JSON re-serializado). Así garantizamos que
@@ -237,11 +239,48 @@ async def stripe_webhook(request: Request) -> dict:
 
         # Idempotente: fijar el plan Pro varias veces es inofensivo (Stripe puede
         # reenviar el mismo evento).
-        _set_supabase_plan_pro(user_id, customer_id)
+        _set_supabase_plan(user_id, "pro", customer_id)
         logger.info("Plan Pro activado para el usuario %s.", user_id)
         return {"received": True, "updated": True}
 
-    # 4) Otros eventos: acuse de recibo sin efectos.
+    # 4) Fin/anulación de la suscripción → degradar a Free. `subscription.deleted`
+    #    salta cuando la suscripción termina (cancelación inmediata o al final del
+    #    periodo). `subscription.updated` a estado `canceled`/`unpaid` cubre además
+    #    la baja por impago. El id de Supabase viaja en el metadata que guardamos
+    #    al crear la suscripción (subscription_data.metadata).
+    if event.get("type") in (
+        "customer.subscription.deleted",
+        "customer.subscription.updated",
+    ):
+        subscription = event.get("data", {}).get("object", {})
+        status = subscription.get("status")
+        # `updated` salta por MUCHOS cambios (p. ej. programar la cancelación al
+        # final del periodo, donde el estado sigue `active`): solo degradamos
+        # cuando la suscripción ya no está vigente.
+        if event.get("type") == "customer.subscription.updated" and status not in (
+            "canceled",
+            "unpaid",
+        ):
+            return {"received": True, "updated": False}
+
+        user_id = (subscription.get("metadata") or {}).get("supabase_user_id")
+        if not user_id:
+            logger.warning(
+                "%s sin supabase_user_id en metadata; se ignora.", event.get("type")
+            )
+            return {"received": True, "updated": False}
+
+        # Idempotente: dejar a alguien en Free varias veces es inofensivo.
+        _set_supabase_plan(user_id, "free")
+        logger.info(
+            "Plan Pro DESACTIVADO (%s, estado=%s) para el usuario %s.",
+            event.get("type"),
+            status,
+            user_id,
+        )
+        return {"received": True, "updated": True}
+
+    # 5) Otros eventos: acuse de recibo sin efectos.
     return {"received": True}
 
 
