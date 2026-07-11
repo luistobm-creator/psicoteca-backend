@@ -1,5 +1,5 @@
 import TreeNode from './TreeNode.jsx';
-import { Library } from './icons.jsx';
+import { Library, X } from './icons.jsx';
 
 export default function Sidebar({
   tree,
@@ -8,13 +8,15 @@ export default function Sidebar({
   selectedId,
   expanded,
   plan = 'free',
+  open = false,
+  onClose,
   onToggle,
   onSelect,
 }) {
   const collectionCount = tree[0]?.children?.length ?? 0;
 
   return (
-    <aside className="sidebar">
+    <aside className={'sidebar' + (open ? ' is-open' : '')}>
       <div className="sidebar__head">
         <span className="sidebar__headicon" aria-hidden="true">
           <Library width={16} height={16} />
@@ -29,6 +31,16 @@ export default function Sidebar({
                 : 'Explora por categorías'}
           </span>
         </div>
+        {onClose && (
+          <button
+            type="button"
+            className="sidebar__close iconbtn iconbtn--sm"
+            onClick={onClose}
+            aria-label="Cerrar menú"
+          >
+            <X width={16} height={16} />
+          </button>
+        )}
       </div>
 
       <div className="sidebar__tree">

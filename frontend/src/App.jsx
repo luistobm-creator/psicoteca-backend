@@ -10,7 +10,7 @@ import ReaderPanel from './components/ReaderPanel.jsx';
 import SearchBar from './components/SearchBar.jsx';
 import UserMenu from './components/UserMenu.jsx';
 import UpgradeModal from './components/UpgradeModal.jsx';
-import { Sun, Moon, Library } from './components/icons.jsx';
+import { Sun, Moon, Library, Menu, X } from './components/icons.jsx';
 import { Link } from 'react-router-dom';
 import { useAuth } from './context/AuthContext.jsx';
 
@@ -88,6 +88,23 @@ export default function App() {
   // --- Navegación / selección ---
   const [selectedId, setSelectedId] = useState(null);
   const [expanded, setExpanded] = useState(() => new Set());
+
+  // --- Menú lateral en móvil (drawer) ---
+  // En pantallas pequeñas el Sidebar se oculta y se abre como panel flotante
+  // desde el botón hamburguesa. En escritorio este estado es irrelevante (el
+  // Sidebar siempre está visible y el botón no se muestra).
+  const [navOpen, setNavOpen] = useState(false);
+  const closeNav = useCallback(() => setNavOpen(false), []);
+
+  // Cerrar el drawer con Escape (comodidad en móvil).
+  useEffect(() => {
+    if (!navOpen) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') setNavOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [navOpen]);
 
   // --- Contenido de la carpeta ---
   const [items, setItems] = useState([]);
@@ -303,6 +320,16 @@ export default function App() {
     [plan, openFileInReader]
   );
 
+  // Selección desde el Sidebar: además de abrir la carpeta (o el modal de
+  // upgrade si es Pro), cierra el drawer en móvil para dejar ver el contenido.
+  const handleSidebarSelect = useCallback(
+    (nodeOrId) => {
+      setNavOpen(false);
+      handleOpenFolder(nodeOrId);
+    },
+    [handleOpenFolder]
+  );
+
   const toggleExpand = useCallback((id) => {
     setExpanded((prev) => {
       const next = new Set(prev);
@@ -340,6 +367,16 @@ export default function App() {
   return (
     <div className="app">
       <header className="topbar">
+        <button
+          type="button"
+          className="iconbtn topbar__menu"
+          onClick={() => setNavOpen((v) => !v)}
+          aria-label="Abrir menú de navegación"
+          aria-expanded={navOpen}
+        >
+          {navOpen ? <X width={18} height={18} /> : <Menu width={18} height={18} />}
+        </button>
+
         <button type="button" className="topbar__brand" onClick={goHome} title="Ir al inicio">
           <span className="topbar__logo">
             <Library width={22} height={22} />
@@ -389,7 +426,19 @@ export default function App() {
         </div>
       </header>
 
-      <div className="workspace" data-reader={readerOpen ? 'open' : 'closed'}>
+      <div
+        className="workspace"
+        data-reader={readerOpen ? 'open' : 'closed'}
+        data-nav={navOpen ? 'open' : 'closed'}
+      >
+        {navOpen && (
+          <div
+            className="nav-overlay"
+            onClick={closeNav}
+            role="presentation"
+            aria-hidden="true"
+          />
+        )}
         <Sidebar
           tree={tree}
           loading={treeLoading}
@@ -397,8 +446,10 @@ export default function App() {
           selectedId={selectedId}
           expanded={expanded}
           plan={plan}
+          open={navOpen}
+          onClose={closeNav}
           onToggle={toggleExpand}
-          onSelect={handleOpenFolder}
+          onSelect={handleSidebarSelect}
         />
 
         <section className="center">

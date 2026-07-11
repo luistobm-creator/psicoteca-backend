@@ -84,10 +84,18 @@ export default function UpgradeModal({ item, onClose }) {
             )}
           </>
         ) : (
-          <Link to="/login" className="modal__cta" onClick={onClose}>
-            <Sparkles width={16} height={16} />
-            Inicia sesión para mejorar a Pro
-          </Link>
+          <>
+            <Link to="/register" className="modal__cta" onClick={onClose}>
+              <Sparkles width={16} height={16} />
+              Crear cuenta para mejorar a Pro
+            </Link>
+            <p className="modal__alt">
+              ¿Ya tienes cuenta?{' '}
+              <Link to="/login" className="modal__altlink" onClick={onClose}>
+                Iniciar sesión
+              </Link>
+            </p>
+          </>
         )}
 
         <button type="button" className="modal__dismiss" onClick={onClose}>

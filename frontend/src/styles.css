@@ -245,6 +245,22 @@ a {
   border-radius: 9px;
 }
 
+/* ---------- Navegación móvil (drawer del Sidebar) ----------
+   Estos tres controles solo aparecen en pantallas pequeñas; en escritorio el
+   Sidebar está siempre visible y no se necesitan (ver media query ≤720px). */
+.topbar__menu {
+  display: none;
+  flex: 0 0 auto;
+}
+.sidebar__close {
+  display: none;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+.nav-overlay {
+  display: none;
+}
+
 /* ---------- Búsqueda global (header) ---------- */
 .searchbar--hero {
   width: 100%;
@@ -1663,9 +1679,6 @@ a {
   }
 }
 @media (max-width: 720px) {
-  :root {
-    --sidebar-w: 200px;
-  }
   .grid {
     grid-template-columns: 1fr;
   }
@@ -1673,8 +1686,8 @@ a {
     font-size: 24px;
   }
   .topbar {
-    gap: 10px;
-    padding: 0 12px;
+    gap: 8px;
+    padding: 0 10px;
   }
   .topbar__brandtext {
     display: none;
@@ -1697,6 +1710,47 @@ a {
     height: 36px;
     padding: 0 12px;
     font-size: 13px;
+  }
+
+  /* --- El Sidebar pasa a ser un drawer flotante --- */
+  /* El workspace deja de reservar una columna para el Sidebar: el contenido
+     ocupa TODO el ancho y el árbol se abre por encima cuando hace falta. */
+  .workspace,
+  .workspace[data-reader='open'] {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar__menu {
+    display: grid;
+  }
+  .sidebar__close {
+    display: grid;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: var(--topbar-h);
+    left: 0;
+    bottom: 0;
+    width: min(86vw, 322px);
+    z-index: 60;
+    transform: translateX(-100%);
+    transition: transform 0.24s ease;
+    border-right: 1px solid var(--border);
+    box-shadow: var(--shadow-lg);
+  }
+  .sidebar.is-open {
+    transform: translateX(0);
+  }
+
+  .nav-overlay {
+    display: block;
+    position: fixed;
+    inset: var(--topbar-h) 0 0 0;
+    z-index: 55;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(1px);
+    animation: modal-fade 0.15s ease-out;
   }
 }
 @media (max-width: 480px) {
@@ -1870,6 +1924,18 @@ a {
   margin-top: 10px;
   font-size: 12.5px;
   color: #dc2626;
+}
+.modal__alt {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.modal__altlink {
+  color: var(--accent);
+  font-weight: 700;
+}
+.modal__altlink:hover {
+  text-decoration: underline;
 }
 .modal__dismiss {
   display: block;
