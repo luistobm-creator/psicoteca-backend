@@ -6,8 +6,9 @@ import { startProCheckout } from '../lib/stripe.js';
 
 // Modal que aparece cuando un usuario sin plan Pro intenta abrir contenido Pro.
 // Ofrece el flujo de "Mejorar a Pro" (o iniciar sesión, si es anónimo).
-export default function UpgradeModal({ item, onClose }) {
+export default function UpgradeModal({ item, onClose, reason = 'content' }) {
   const { isAuthenticated } = useAuth();
+  const isDownload = reason === 'download';
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -54,16 +55,26 @@ export default function UpgradeModal({ item, onClose }) {
         </div>
 
         <h2 id="upgrade-title" className="modal__title">
-          Contenido exclusivo Pro
+          {isDownload ? 'Descargas exclusivas de Pro' : 'Contenido exclusivo Pro'}
         </h2>
         <p className="modal__text">
-          {item?.name && (
+          {isDownload ? (
             <>
-              <strong>{item.name}</strong>{' '}
-              {item.is_folder ? 'es una carpeta Pro. ' : 'es un documento Pro. '}
+              La <strong>lectura online</strong> es gratis, pero las{' '}
+              <strong>descargas de PDF</strong> son parte del plan Pro. Mejóralo para
+              descargar sin límite a tu dispositivo.
+            </>
+          ) : (
+            <>
+              {item?.name && (
+                <>
+                  <strong>{item.name}</strong>{' '}
+                  {item.is_folder ? 'es una carpeta Pro. ' : 'es un documento Pro. '}
+                </>
+              )}
+              Mejora tu plan para desbloquear la biblioteca completa.
             </>
           )}
-          Mejora tu plan para desbloquear la biblioteca completa.
         </p>
 
         {isAuthenticated ? (

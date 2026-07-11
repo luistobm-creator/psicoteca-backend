@@ -9,7 +9,7 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
     <div className="auth">
       <div className="auth__panel fade-in">
         <div className="auth__card">
-          <Link to="/" className="auth__brand" title="Ir a la biblioteca">
+          <Link to="/app" className="auth__brand" title="Ir a la biblioteca">
             <span className="auth__logo">
               <Library width={22} height={22} />
             </span>
@@ -24,7 +24,7 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
 
         {footer && <div className="auth__footer">{footer}</div>}
 
-        <Link to="/" className="auth__back">
+        <Link to="/app" className="auth__back">
           <ArrowLeft width={15} height={15} />
           Volver a la biblioteca
         </Link>

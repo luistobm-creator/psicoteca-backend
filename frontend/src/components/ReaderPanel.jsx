@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { X, Lock } from './icons.jsx';
+import { X, Lock, Download } from './icons.jsx';
 import { fileType } from '../lib/fileType.js';
 import * as api from '../api.js';
 
@@ -10,7 +10,7 @@ const PdfViewer = lazy(() => import('./PdfViewer.jsx'));
 // (`/api/items/{id}/content`): se descarga con el token de Supabase y se
 // incrusta como object URL. Ningún enlace de Drive llega al navegador. Si el
 // backend responde 403 (contenido Pro sin plan), se muestra el bloqueo.
-export default function ReaderPanel({ file, onClose }) {
+export default function ReaderPanel({ file, plan, onRequirePro, onClose }) {
   const { label, color } = fileType(file);
   const [state, setState] = useState({
     loading: true,
@@ -60,6 +60,31 @@ export default function ReaderPanel({ file, onClose }) {
   // muestra la 1ª página.
   const isPdf = type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
 
+  // Descargas: exclusivas de Pro. Se ofrecen solo cuando hay contenido visible
+  // (para el usuario Pro reutilizamos el blob ya cargado → descarga instantánea,
+  // sin re-pedirlo al servidor). Un usuario sin Pro ve el botón, pero al pulsarlo
+  // se abre el modal de mejora (la lectura online sí es gratuita).
+  const isPro = plan === 'pro';
+  const canDownload = !loading && !error && !forbidden && !!blob;
+
+  const handleDownload = () => {
+    if (!isPro) {
+      onRequirePro?.(file);
+      return;
+    }
+    if (!blob) return;
+    const objUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objUrl;
+    let name = file.name || 'documento';
+    if (isPdf && !/\.pdf$/i.test(name)) name += '.pdf';
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(objUrl), 1000);
+  };
+
   return (
     <aside className="reader">
       <header className="reader__bar">
@@ -70,6 +95,17 @@ export default function ReaderPanel({ file, onClose }) {
           {file.name}
         </span>
         <div className="reader__actions">
+          {canDownload && (
+            <button
+              type="button"
+              className={'iconbtn iconbtn--sm' + (isPro ? '' : ' iconbtn--pro')}
+              onClick={handleDownload}
+              title={isPro ? 'Descargar' : 'Descargar (Pro)'}
+              aria-label={isPro ? 'Descargar documento' : 'Descargar (exclusivo Pro)'}
+            >
+              <Download width={16} height={16} />
+            </button>
+          )}
           <button
             type="button"
             className="iconbtn iconbtn--sm"

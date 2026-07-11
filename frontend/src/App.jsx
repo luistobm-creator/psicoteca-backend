@@ -288,8 +288,10 @@ export default function App() {
   );
 
   // --- Gating visual: interceptar clics en contenido Pro (usuarios no-Pro) ---
-  // El item que disparó el modal de upgrade (null = modal cerrado).
+  // El item que disparó el modal de upgrade (null = modal cerrado) y el motivo
+  // ('content' = contenido Pro bloqueado, 'download' = descarga solo-Pro).
   const [upgradeItem, setUpgradeItem] = useState(null);
+  const [upgradeReason, setUpgradeReason] = useState('content');
 
   const handleOpenFolder = useCallback(
     (nodeOrId) => {
@@ -301,6 +303,7 @@ export default function App() {
         nodeOrId.is_premium &&
         plan !== 'pro'
       ) {
+        setUpgradeReason('content');
         setUpgradeItem(nodeOrId);
         return;
       }
@@ -312,6 +315,7 @@ export default function App() {
   const handleOpenFile = useCallback(
     (file) => {
       if (file?.is_premium && plan !== 'pro') {
+        setUpgradeReason('content');
         setUpgradeItem(file);
         return;
       }
@@ -319,6 +323,12 @@ export default function App() {
     },
     [plan, openFileInReader]
   );
+
+  // El lector pide Pro para DESCARGAR (la lectura online es libre para todos).
+  const requireProForDownload = useCallback((file) => {
+    setUpgradeReason('download');
+    setUpgradeItem(file);
+  }, []);
 
   // Selección desde el Sidebar: además de abrir la carpeta (o el modal de
   // upgrade si es Pro), cierra el drawer en móvil para dejar ver el contenido.
@@ -535,11 +545,22 @@ export default function App() {
           )}
         </section>
 
-        {readerOpen && <ReaderPanel file={openFile} onClose={() => setOpenFile(null)} />}
+        {readerOpen && (
+          <ReaderPanel
+            file={openFile}
+            plan={plan}
+            onRequirePro={requireProForDownload}
+            onClose={() => setOpenFile(null)}
+          />
+        )}
       </div>
 
       {upgradeItem && (
-        <UpgradeModal item={upgradeItem} onClose={() => setUpgradeItem(null)} />
+        <UpgradeModal
+          item={upgradeItem}
+          reason={upgradeReason}
+          onClose={() => setUpgradeItem(null)}
+        />
       )}
     </div>
   );

@@ -106,6 +106,9 @@ def _safe_filename(name: str, native: bool) -> str:
 )
 def get_item_content(
     item_id: str,
+    download: bool = Query(
+        False, description="Fuerza la descarga (attachment). Exclusivo del plan Pro."
+    ),
     session: Session = Depends(get_session),
     plan: str = Depends(get_user_plan),
 ) -> StreamingResponse:
@@ -127,16 +130,26 @@ def get_item_content(
     if item.is_premium and plan != "pro":
         raise HTTPException(status_code=403, detail="Contenido exclusivo del plan Pro.")
 
+    # Descargar (attachment) es una acción EXCLUSIVA del plan Pro, aunque el
+    # documento sea libre (la lectura online sí es gratuita). Este gate protege el
+    # acceso directo al endpoint; en el lector, el usuario Pro descarga reutilizando
+    # los bytes que ya cargó para la vista previa (descarga instantánea).
+    if download and plan != "pro":
+        raise HTTPException(
+            status_code=403, detail="Las descargas son exclusivas del plan Pro."
+        )
+
     native = item.mime_type.startswith(_GOOGLE_NATIVE_PREFIX)
     export_mime = _EXPORT_MIME if native else None
     content_type = _EXPORT_MIME if native else (item.mime_type or "application/octet-stream")
 
+    disposition = "attachment" if download else "inline"
     stream = iter_media(get_drive_service(), item.id, export_mime)
     return StreamingResponse(
         stream,
         media_type=content_type,
         headers={
-            "Content-Disposition": f'inline; filename="{_safe_filename(item.name, native)}"',
+            "Content-Disposition": f'{disposition}; filename="{_safe_filename(item.name, native)}"',
             "Cache-Control": "private, max-age=300",
             "X-Content-Type-Options": "nosniff",
         },

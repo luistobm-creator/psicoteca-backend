@@ -17,7 +17,7 @@ export default function Register() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (isAuthenticated) navigate('/', { replace: true });
+    if (isAuthenticated) navigate('/app', { replace: true });
   }, [isAuthenticated, navigate]);
 
   const onSubmit = async (e) => {
@@ -35,7 +35,7 @@ export default function Register() {
         );
         setSubmitting(false);
       } else {
-        navigate('/', { replace: true });
+        navigate('/app', { replace: true });
       }
     } catch (err) {
       setError(err.message || 'No se pudo crear la cuenta.');

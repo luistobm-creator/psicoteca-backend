@@ -136,8 +136,8 @@ def create_checkout_session(authorization: str | None = Header(default=None)) ->
             client_reference_id=user_id,                     # id de Supabase (campo nativo)
             metadata={"supabase_user_id": user_id},          # ← VITAL (lo pediste)
             subscription_data={"metadata": {"supabase_user_id": user_id}},
-            success_url=f"{settings.frontend_base_url}/?checkout=success",
-            cancel_url=f"{settings.frontend_base_url}/?checkout=cancel",
+            success_url=f"{settings.frontend_base_url}/app?checkout=success",
+            cancel_url=f"{settings.frontend_base_url}/app?checkout=cancel",
             allow_promotion_codes=True,
         )
     except stripe.error.StripeError as exc:

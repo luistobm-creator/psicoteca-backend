@@ -16,7 +16,7 @@ export default function Login() {
 
   // Si ya hay sesión, no tiene sentido ver el login.
   useEffect(() => {
-    if (isAuthenticated) navigate('/', { replace: true });
+    if (isAuthenticated) navigate('/app', { replace: true });
   }, [isAuthenticated, navigate]);
 
   const onSubmit = async (e) => {
@@ -25,7 +25,7 @@ export default function Login() {
     setSubmitting(true);
     try {
       await login({ email, password });
-      navigate('/', { replace: true });
+      navigate('/app', { replace: true });
     } catch (err) {
       setError(err.message || 'No se pudo iniciar sesión.');
       setSubmitting(false);
