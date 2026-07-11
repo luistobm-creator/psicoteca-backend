@@ -20,7 +20,7 @@ from sqlalchemy import text
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 from app.config import settings
-from app.curation import apply_declarative
+from app.curation import apply_declarative, path_is_premium
 from app.database import engine, init_db
 from app.drive_client import (
     FOLDER_MIME,
@@ -49,7 +49,14 @@ def _to_int(value) -> int | None:
         return None
 
 
-def _build_row(f: dict, parent_id: str | None, path: str, depth: int, run_ts: str) -> dict:
+def _build_row(
+    f: dict,
+    parent_id: str | None,
+    path: str,
+    depth: int,
+    run_ts: str,
+    is_premium: bool = False,
+) -> dict:
     """Traduce un recurso de Drive a una fila de la tabla `items`."""
     return {
         "id": f["id"],
@@ -65,6 +72,7 @@ def _build_row(f: dict, parent_id: str | None, path: str, depth: int, run_ts: st
         "path": path,
         "depth": depth,
         "trashed": False,
+        "is_premium": is_premium,
         "synced_at": run_ts,
     }
 
@@ -74,9 +82,10 @@ def _upsert_rows(conn, rows: list[dict]) -> None:
     if not rows:
         return
     base = sqlite_insert(Item.__table__)
-    # `is_premium` es curaduría manual: NO debe pisarse en cada sync (si se
-    # incluyera, el on_conflict lo resetearía al valor por defecto). Se preserva
-    # excluyéndolo del UPDATE; en filas nuevas toma su default (False).
+    # `is_premium` se fija al INSERTAR (curaduría en caliente según
+    # PREMIUM_FOLDERS, ver run_sync) y se PRESERVA en conflicto (no se pisa al
+    # re-sincronizar una fila existente). La reconciliación declarativa al final
+    # del sync (apply_declarative) es la fuente de verdad del estado Pro.
     _preserve = {"id", "is_premium"}
     update_cols = {
         col.name: getattr(base.excluded, col.name)
@@ -160,6 +169,7 @@ def run_sync() -> None:
         "path": root_name,
         "depth": 0,
         "trashed": False,
+        "is_premium": False,
         "synced_at": run_ts,
     }
     with engine.begin() as conn:
@@ -174,6 +184,16 @@ def run_sync() -> None:
     total_folders = 0
     total_files = 0
 
+    # Curaduría Pro EN CALIENTE: marca is_premium al INSERTAR cada fila. Como el
+    # BFS procesa cada carpeta antes que sus hijos, cuando se construye un
+    # descendiente su carpeta Pro raíz ya está en `premium_prefixes`. Así el
+    # contenido Pro nunca existe como "libre" en la BD durante el sync inicial
+    # (cierra la ventana del disco efímero de Render en cada cold start).
+    # Solo se registran como prefijo las carpetas que coinciden por NOMBRE con
+    # PREMIUM_FOLDERS (las raíces); el conjunto queda pequeño (~pocas entradas).
+    premium_names = {n.lower() for n in settings.premium_folders_list}
+    premium_prefixes: list[str] = []
+
     while queue:
         folder_id = queue.popleft()
         parent_path = path_of[folder_id]
@@ -184,9 +204,20 @@ def run_sync() -> None:
             name = f.get("name", "(sin nombre)")
             child_path = f"{parent_path}/{name}"
             child_depth = parent_depth + 1
-            batch.append(_build_row(f, folder_id, child_path, child_depth, run_ts))
+            is_folder = f["mimeType"] == FOLDER_MIME
 
-            if f["mimeType"] == FOLDER_MIME:
+            # Raíz Pro (por nombre) o descendiente de una ya descubierta.
+            if is_folder and name.lower() in premium_names:
+                prem = True
+                premium_prefixes.append(child_path)
+            else:
+                prem = path_is_premium(child_path, premium_prefixes)
+
+            batch.append(
+                _build_row(f, folder_id, child_path, child_depth, run_ts, prem)
+            )
+
+            if is_folder:
                 queue.append(f["id"])
                 path_of[f["id"]] = child_path
                 depth_of[f["id"]] = child_depth

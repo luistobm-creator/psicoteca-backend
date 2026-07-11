@@ -32,6 +32,17 @@ def _like_prefix(path: str) -> str:
     return f"{escaped}/%"
 
 
+def path_is_premium(path: str, premium_prefixes) -> bool:
+    """True si `path` coincide con una raíz Pro ya descubierta o cuelga de ella.
+
+    `premium_prefixes` es el conjunto de rutas de las carpetas Pro raíz (las que
+    coinciden por nombre con PREMIUM_FOLDERS). La usa el sync para marcar
+    is_premium EN CALIENTE al insertar cada fila (ver app/sync.py), cerrando la
+    ventana en la que un item Pro existiría como "libre" durante el crawl inicial.
+    """
+    return any(path == p or path.startswith(p + "/") for p in premium_prefixes)
+
+
 def find_folder_paths(conn, name: str) -> list[str]:
     """Rutas de todas las carpetas activas cuyo nombre coincide (case-insensitive)."""
     rows = conn.execute(
