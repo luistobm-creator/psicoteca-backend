@@ -111,6 +111,26 @@ export async function fetchContent(id) {
   return { url: URL.createObjectURL(blob), type: blob.type, blob };
 }
 
+/** URL absoluta del contenido de un item (para carga progresiva de PDF.js). */
+export function contentUrl(id) {
+  return `${API_BASE}/api/items/${encodeURIComponent(id)}/content`;
+}
+
+/**
+ * Token de acceso actual de Supabase, para pasarlo como cabecera a PDF.js en la
+ * carga progresiva por rangos. Devuelve null si no hay sesión (documento libre).
+ */
+export async function getAccessToken() {
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    return session?.access_token ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Favoritos (playlists). Todas requieren sesión: el backend reenvía el JWT a
 // Supabase y las políticas RLS garantizan que cada usuario solo ve/toca lo suyo.

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { X, Lock, Download } from './icons.jsx';
 import { fileType } from '../lib/fileType.js';
 import * as api from '../api.js';
@@ -7,13 +7,32 @@ import FavoriteButton from './FavoriteButton.jsx';
 // El visor PDF.js (y su ~1 MB de dependencia) se carga solo al abrir un PDF.
 const PdfViewer = lazy(() => import('./PdfViewer.jsx'));
 
+// ¿Aplica el visor PROGRESIVO (carga por rangos)? Solo para PDFs binarios, que
+// tienen tamaño conocido y Drive sirve por Range. Los Google Docs nativos se
+// exportan a PDF al vuelo (sin Range) → modo blob. El resto de tipos → iframe.
+function analyzeFile(file) {
+  const mime = file.mime_type || '';
+  const isNative = mime.startsWith('application/vnd.google-apps.');
+  const isPdf = isNative || mime === 'application/pdf' || /\.pdf$/i.test(file.name || '');
+  return { isNative, isPdf, progressive: isPdf && !isNative };
+}
+
 // El contenido se sirve SIEMPRE por el proxy autenticado del backend
-// (`/api/items/{id}/content`): se descarga con el token de Supabase y se
-// incrusta como object URL. Ningún enlace de Drive llega al navegador. Si el
-// backend responde 403 (contenido Pro sin plan), se muestra el bloqueo.
+// (`/api/items/{id}/content`). En modo progresivo PDF.js lo pide por rangos con
+// el token en la cabecera; en modo blob se descarga completo. Ningún enlace de
+// Drive llega al navegador. Un 403 (Pro sin plan) muestra el bloqueo.
 export default function ReaderPanel({ file, plan, onRequirePro, onClose }) {
   const { label, color } = fileType(file);
-  const [state, setState] = useState({
+  const { isPdf, progressive } = analyzeFile(file);
+  const isPro = plan === 'pro';
+
+  // Modo PROGRESIVO: solo necesitamos el token (PDF.js baja el contenido por rangos).
+  const [auth, setAuth] = useState({ ready: false, token: null });
+  const [forbidden, setForbidden] = useState(false);
+  const [viewerError, setViewerError] = useState(null);
+
+  // Modo BLOB (exports nativos + no-PDF): descarga completa como antes.
+  const [blobState, setBlobState] = useState({
     loading: true,
     url: null,
     blob: null,
@@ -23,10 +42,24 @@ export default function ReaderPanel({ file, plan, onRequirePro, onClose }) {
   });
 
   useEffect(() => {
+    setForbidden(false);
+    setViewerError(null);
+
+    if (progressive) {
+      setAuth({ ready: false, token: null });
+      let active = true;
+      api.getAccessToken().then((token) => {
+        if (active) setAuth({ ready: true, token });
+      });
+      return () => {
+        active = false;
+      };
+    }
+
+    // --- Modo blob ---
     let cancelled = false;
     let objectUrl = null;
-    setState({ loading: true, url: null, blob: null, type: null, error: null, forbidden: false });
-
+    setBlobState({ loading: true, url: null, blob: null, type: null, error: null, forbidden: false });
     api
       .fetchContent(file.id)
       .then(({ url, type, blob }) => {
@@ -35,11 +68,11 @@ export default function ReaderPanel({ file, plan, onRequirePro, onClose }) {
           return;
         }
         objectUrl = url;
-        setState({ loading: false, url, blob, type, error: null, forbidden: false });
+        setBlobState({ loading: false, url, blob, type, error: null, forbidden: false });
       })
       .catch((err) => {
         if (cancelled) return;
-        setState({
+        setBlobState({
           loading: false,
           url: null,
           blob: null,
@@ -53,38 +86,42 @@ export default function ReaderPanel({ file, plan, onRequirePro, onClose }) {
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [file.id]);
+  }, [file.id, progressive]);
 
-  const { loading, url, blob, type, error, forbidden } = state;
-  // Los PDF (incluidos los Google Docs exportados a PDF por el backend) se
-  // renderizan con PDF.js para poder desplazarse en móvil; el iframe de iOS solo
-  // muestra la 1ª página.
-  const isPdf = type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
-
-  // Descargas: exclusivas de Pro. Se ofrecen solo cuando hay contenido visible
-  // (para el usuario Pro reutilizamos el blob ya cargado → descarga instantánea,
-  // sin re-pedirlo al servidor). Un usuario sin Pro ve el botón, pero al pulsarlo
-  // se abre el modal de mejora (la lectura online sí es gratuita).
-  const isPro = plan === 'pro';
-  const canDownload = !loading && !error && !forbidden && !!blob;
-
-  const handleDownload = () => {
+  // Descarga (Pro). Modo blob: reutiliza el blob (instantáneo). Progresivo:
+  // re-fetchea el archivo completo al pulsar (no hay blob en memoria).
+  const [downloading, setDownloading] = useState(false);
+  const handleDownload = useCallback(async () => {
     if (!isPro) {
       onRequirePro?.(file);
       return;
     }
-    if (!blob) return;
-    const objUrl = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = objUrl;
-    let name = file.name || 'documento';
-    if (isPdf && !/\.pdf$/i.test(name)) name += '.pdf';
-    a.download = name;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(objUrl), 1000);
-  };
+    try {
+      setDownloading(true);
+      let blob = blobState.blob;
+      if (!blob) ({ blob } = await api.fetchContent(file.id));
+      const objUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objUrl;
+      let name = file.name || 'documento';
+      if (isPdf && !/\.pdf$/i.test(name)) name += '.pdf';
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(objUrl), 1000);
+    } catch {
+      /* la descarga falló; no rompe el visor */
+    } finally {
+      setDownloading(false);
+    }
+  }, [isPro, blobState.blob, file, isPdf, onRequirePro]);
+
+  const isForbidden = progressive ? forbidden : blobState.forbidden;
+  const error = progressive ? viewerError : blobState.error;
+  // Descarga disponible cuando el documento es accesible (Pro reutiliza/re-fetchea).
+  const canDownload =
+    !error && !isForbidden && (progressive ? auth.ready : !!blobState.blob);
 
   return (
     <aside className="reader">
@@ -102,6 +139,7 @@ export default function ReaderPanel({ file, plan, onRequirePro, onClose }) {
               type="button"
               className={'iconbtn iconbtn--sm' + (isPro ? '' : ' iconbtn--pro')}
               onClick={handleDownload}
+              disabled={downloading}
               title={isPro ? 'Descargar' : 'Descargar (Pro)'}
               aria-label={isPro ? 'Descargar documento' : 'Descargar (exclusivo Pro)'}
             >
@@ -121,9 +159,7 @@ export default function ReaderPanel({ file, plan, onRequirePro, onClose }) {
       </header>
 
       <div className="reader__frame">
-        {loading ? (
-          <div className="grid-state muted">Cargando…</div>
-        ) : forbidden ? (
+        {isForbidden ? (
           <div className="reader__locked">
             <span className="reader__lockicon" aria-hidden="true">
               <Lock width={26} height={26} />
@@ -133,15 +169,33 @@ export default function ReaderPanel({ file, plan, onRequirePro, onClose }) {
           </div>
         ) : error ? (
           <div className="grid-state error">{error}</div>
-        ) : isPdf && blob ? (
+        ) : progressive ? (
+          auth.ready ? (
+            <Suspense fallback={<div className="grid-state muted">Cargando visor…</div>}>
+              <PdfViewer
+                key={file.id}
+                url={api.contentUrl(file.id)}
+                httpHeaders={
+                  auth.token ? { Authorization: `Bearer ${auth.token}` } : undefined
+                }
+                sizeBytes={file.size}
+                onForbidden={() => setForbidden(true)}
+              />
+            </Suspense>
+          ) : (
+            <div className="grid-state muted">Cargando…</div>
+          )
+        ) : blobState.loading ? (
+          <div className="grid-state muted">Cargando…</div>
+        ) : isPdf && blobState.blob ? (
           <Suspense fallback={<div className="grid-state muted">Cargando visor…</div>}>
-            <PdfViewer key={file.id} blob={blob} />
+            <PdfViewer key={file.id} blob={blobState.blob} />
           </Suspense>
-        ) : url ? (
+        ) : blobState.url ? (
           <iframe
             key={file.id}
             className="reader__iframe"
-            src={url}
+            src={blobState.url}
             title={file.name}
             allow="autoplay; encrypted-media; fullscreen"
           />
