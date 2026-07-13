@@ -68,7 +68,8 @@ class SearchResponse(BaseModel):
     """Resultados de una búsqueda full-text."""
 
     query: str
-    total: int                       # total de coincidencias en la BD
+    total: int                       # coincidencias en la BD (acotado a un tope)
+    total_capped: bool = False       # True si `total` llegó al tope (mostrar "N+")
     count: int                       # nº de resultados en esta página
     limit: int
     offset: int

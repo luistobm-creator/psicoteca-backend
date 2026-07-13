@@ -16,6 +16,7 @@ import { useAuth } from './context/AuthContext.jsx';
 
 const PAGE_SIZE = 60;
 const SEARCH_LIMIT = 50;
+const SEARCH_MIN_CHARS = 3;
 const SEARCH_DEBOUNCE_MS = 300;
 const THEME_KEY = 'psicoteca-theme-v2';
 const RECENTS_KEY = 'psicoteca-recents-v1';
@@ -144,11 +145,14 @@ export default function App() {
   const [searchValue, setSearchValue] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [searchTotal, setSearchTotal] = useState(0);
+  const [searchCapped, setSearchCapped] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState(null);
   const searchSeq = useRef(0);
   const searchInputRef = useRef(null);
   const searchMode = searchValue.trim().length > 0;
+  // Consulta iniciada pero aún demasiado corta para lanzarla al backend.
+  const searchTooShort = searchMode && searchValue.trim().length < SEARCH_MIN_CHARS;
 
   // Atajo de teclado: Ctrl/Cmd + K enfoca la búsqueda global.
   useEffect(() => {
@@ -230,9 +234,13 @@ export default function App() {
   // Búsqueda con debounce + guarda contra respuestas fuera de orden.
   useEffect(() => {
     const q = searchValue.trim();
-    if (!q) {
+    // Nada escrito, o consulta demasiado corta: no llamamos al backend (un
+    // prefijo de 1–2 caracteres escanea casi todo el índice). Con menos del
+    // mínimo se muestra una pista en su lugar (ver searchTooShort en el render).
+    if (q.length < SEARCH_MIN_CHARS) {
       setSearchResults([]);
       setSearchTotal(0);
+      setSearchCapped(false);
       setSearchError(null);
       setSearchLoading(false);
       return undefined;
@@ -246,6 +254,7 @@ export default function App() {
           if (seq !== searchSeq.current) return;
           setSearchResults(data.items);
           setSearchTotal(data.total);
+          setSearchCapped(!!data.total_capped);
           setSearchError(null);
         })
         .catch((e) => {
@@ -483,9 +492,10 @@ export default function App() {
               <div className="center__header">
                 <div className="center__title">
                   Resultados
-                  {!searchLoading && (
+                  {!searchLoading && !searchTooShort && (
                     <span className="center__count">
-                      {searchTotal} coincidencia{searchTotal === 1 ? '' : 's'}
+                      {searchTotal}{searchCapped ? '+' : ''} coincidencia
+                      {searchTotal === 1 && !searchCapped ? '' : 's'}
                     </span>
                   )}
                 </div>
@@ -495,6 +505,9 @@ export default function App() {
                 <SearchResults
                   results={searchResults}
                   total={searchTotal}
+                  totalCapped={searchCapped}
+                  tooShort={searchTooShort}
+                  minChars={SEARCH_MIN_CHARS}
                   loading={searchLoading}
                   error={searchError}
                   activeId={openFile?.id}

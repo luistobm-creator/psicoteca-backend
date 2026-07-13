@@ -69,6 +69,9 @@ function ResultRow({ item, activeId, plan = 'free', onOpenFolder, onOpenFile }) 
 export default function SearchResults({
   results,
   total,
+  totalCapped = false,
+  tooShort = false,
+  minChars = 3,
   loading,
   error,
   activeId,
@@ -76,6 +79,12 @@ export default function SearchResults({
   onOpenFolder,
   onOpenFile,
 }) {
+  if (tooShort)
+    return (
+      <div className="grid-state muted">
+        Escribe al menos {minChars} caracteres para buscar.
+      </div>
+    );
   if (loading) return <div className="grid-state muted">Buscando…</div>;
   if (error) return <div className="grid-state error">Error: {error}</div>;
   if (!results.length) return <div className="grid-state muted">Sin resultados.</div>;
@@ -94,7 +103,7 @@ export default function SearchResults({
       ))}
       {total > results.length && (
         <div className="results__more muted">
-          Mostrando {results.length} de {total} coincidencias. Afina la búsqueda para acotar.
+          Mostrando {results.length} de {total}{totalCapped ? '+' : ''} coincidencias. Afina la búsqueda para acotar.
         </div>
       )}
     </div>

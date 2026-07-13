@@ -29,10 +29,18 @@ engine = create_engine(
 
 @event.listens_for(engine, "connect")
 def _configure_sqlite(dbapi_connection, _connection_record):
-    """Activa WAL (mejor concurrencia lectura/escritura) en cada conexión."""
+    """Ajustes por conexión: WAL + afinado de lectura para la búsqueda FTS.
+
+    Los PRAGMA de caché/mmap/temp aceleran las consultas de solo lectura (la
+    búsqueda) sin afectar a la integridad de los datos. Valores moderados,
+    pensados para el plan free de Render (512 MB de RAM).
+    """
     cursor = dbapi_connection.cursor()
-    cursor.execute("PRAGMA journal_mode=WAL;")
+    cursor.execute("PRAGMA journal_mode=WAL;")       # concurrencia lectura/escritura
     cursor.execute("PRAGMA synchronous=NORMAL;")
+    cursor.execute("PRAGMA cache_size=-16000;")      # ~16 MB de caché de páginas
+    cursor.execute("PRAGMA mmap_size=134217728;")    # 128 MB de E/S mapeada en memoria
+    cursor.execute("PRAGMA temp_store=MEMORY;")      # ordenaciones/temporales en RAM
     cursor.close()
 
 

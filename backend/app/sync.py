@@ -307,6 +307,13 @@ def run_sync() -> None:
             "(toda la biblioteca queda libre)."
         )
 
+    # 3.6) Optimiza el índice FTS5: fusiona en una estructura compacta los
+    #      segmentos acumulados durante la carga masiva, de modo que las búsquedas
+    #      recorran menos b-trees. Barato y seguro; una vez por sync completo.
+    with engine.begin() as conn:
+        conn.exec_driver_sql("INSERT INTO items_fts(items_fts) VALUES('optimize');")
+    log.info("Índice FTS5 optimizado.")
+
     # 4) Resumen final.
     with engine.connect() as conn:
         active = conn.execute(
