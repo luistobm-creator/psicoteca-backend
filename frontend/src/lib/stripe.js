@@ -32,6 +32,11 @@ export function getStripe() {
   return stripePromise;
 }
 
+// Tope de espera para las peticiones de pago (ms). El backend en Render (free) se
+// "duerme" y puede tardar en reactivarse; con este timeout la petición nunca queda
+// colgada para siempre: si expira, se lanza un error claro para reintentar.
+const BILLING_TIMEOUT_MS = 60000;
+
 // Petición POST autenticada al backend de pagos. Adjunta el token de Supabase,
 // normaliza los errores a Error(mensaje en español) y devuelve el JSON de la
 // respuesta. `loginError` es el mensaje que se lanza si no hay sesión activa.
@@ -45,7 +50,10 @@ async function billingRequest(path, { body, loginError } = {}) {
     throw new Error(loginError || 'Debes iniciar sesión para continuar.');
   }
 
-  // 2) Llamar al backend enviando el token.
+  // 2) Llamar al backend enviando el token. Con timeout (AbortController) para no
+  //    quedarnos colgados si Render está reactivándose (cold start).
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), BILLING_TIMEOUT_MS);
   let res;
   try {
     res = await fetch(`${API_BASE}${path}`, {
@@ -55,9 +63,18 @@ async function billingRequest(path, { body, loginError } = {}) {
         Authorization: `Bearer ${accessToken}`,
       },
       body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
     });
-  } catch {
+  } catch (err) {
+    if (err?.name === 'AbortError') {
+      throw new Error(
+        'El servidor de pagos tardó demasiado en responder (puede estar ' +
+          'reactivándose). Inténtalo de nuevo en unos segundos.'
+      );
+    }
     throw new Error('No se pudo conectar con el servidor de pagos.');
+  } finally {
+    clearTimeout(timeout);
   }
 
   if (!res.ok) {

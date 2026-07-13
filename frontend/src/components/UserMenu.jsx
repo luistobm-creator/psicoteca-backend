@@ -22,6 +22,12 @@ export default function UserMenu() {
   const [portalLoading, setPortalLoading] = useState(false);
   const [portalError, setPortalError] = useState(null);
 
+  // Aviso de "cold start": si una petición de pago tarda unos segundos, mostramos
+  // una nota para que el usuario sepa que el servidor se está reactivando (y no que
+  // la app se congeló). Solo uno de los dos flujos puede estar activo a la vez.
+  const [slow, setSlow] = useState(false);
+  const busy = checkoutLoading || portalLoading;
+
   // Cerrar al hacer clic fuera o con Escape.
   useEffect(() => {
     if (!open) return undefined;
@@ -37,6 +43,29 @@ export default function UserMenu() {
       document.removeEventListener('mousedown', onDown);
       document.removeEventListener('keydown', onKey);
     };
+  }, [open]);
+
+  // Muestra el aviso de "reactivando" tras un breve umbral mientras se espera al
+  // backend (checkout o portal).
+  useEffect(() => {
+    if (!busy) {
+      setSlow(false);
+      return undefined;
+    }
+    const t = setTimeout(() => setSlow(true), 4000);
+    return () => clearTimeout(t);
+  }, [busy]);
+
+  // Al cerrar el menú, resetear los estados de carga/error para que al reabrirlo los
+  // botones estén frescos (evita que "Redirigiendo a Stripe…" quede pegado si una
+  // petición previa se colgó durante un cold start de Render).
+  useEffect(() => {
+    if (open) return undefined;
+    setCheckoutLoading(false);
+    setCheckoutError(null);
+    setPortalLoading(false);
+    setPortalError(null);
+    return undefined;
   }, [open]);
 
   // "Mejorar a Pro": pide al backend una sesión de Checkout y redirige a Stripe.
@@ -125,6 +154,11 @@ export default function UserMenu() {
                 <Sparkles width={16} height={16} />
                 {checkoutLoading ? 'Redirigiendo a Stripe…' : 'Mejorar a Pro'}
               </button>
+              {checkoutLoading && slow && (
+                <div className="usermenu__hint" role="status">
+                  El servidor está reactivándose… esto puede tardar unos segundos.
+                </div>
+              )}
               {checkoutError && (
                 <div className="usermenu__error" role="alert">
                   {checkoutError}
@@ -143,6 +177,11 @@ export default function UserMenu() {
                 <Crown width={16} height={16} />
                 {portalLoading ? 'Abriendo portal…' : 'Gestionar plan Pro'}
               </button>
+              {portalLoading && slow && (
+                <div className="usermenu__hint" role="status">
+                  El servidor está reactivándose… esto puede tardar unos segundos.
+                </div>
+              )}
               {portalError && (
                 <div className="usermenu__error" role="alert">
                   {portalError}

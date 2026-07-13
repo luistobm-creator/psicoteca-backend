@@ -12,6 +12,7 @@ export default function UpgradeModal({ item, onClose, reason = 'content' }) {
   const isDownload = reason === 'download';
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [slow, setSlow] = useState(false);
   const [billingInterval, setBillingInterval] = useState('annual');
 
   useEffect(() => {
@@ -21,6 +22,17 @@ export default function UpgradeModal({ item, onClose, reason = 'content' }) {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
+
+  // Aviso de "cold start": si el checkout tarda, avisamos que el servidor se está
+  // reactivando (el timeout de startProCheckout evita que se cuelgue para siempre).
+  useEffect(() => {
+    if (!loading) {
+      setSlow(false);
+      return undefined;
+    }
+    const t = setTimeout(() => setSlow(true), 4000);
+    return () => clearTimeout(t);
+  }, [loading]);
 
   const handleUpgrade = async () => {
     setError(null);
@@ -91,6 +103,11 @@ export default function UpgradeModal({ item, onClose, reason = 'content' }) {
               <Sparkles width={16} height={16} />
               {loading ? 'Redirigiendo a Stripe…' : 'Mejorar a Pro'}
             </button>
+            {loading && slow && (
+              <div className="modal__hint" role="status">
+                El servidor está reactivándose… esto puede tardar unos segundos.
+              </div>
+            )}
             {error && (
               <div className="modal__error" role="alert">
                 {error}

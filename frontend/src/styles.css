@@ -467,6 +467,36 @@ a {
   font-size: 12.5px;
   line-height: 1.35;
 }
+.usermenu__upgrade:disabled {
+  opacity: 0.75;
+  cursor: default;
+}
+/* Aviso de "cold start" mientras se espera al backend (checkout / portal). */
+.usermenu__hint {
+  margin-top: 8px;
+  padding: 8px 11px;
+  border-radius: 9px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.35;
+  text-align: center;
+  animation: billing-hint-pulse 1.6s ease-in-out infinite;
+}
+@keyframes billing-hint-pulse {
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .usermenu__hint {
+    animation: none;
+  }
+}
 .usermenu__item {
   display: flex;
   align-items: center;
@@ -2086,6 +2116,19 @@ a {
   margin-top: 10px;
   font-size: 12.5px;
   color: #dc2626;
+}
+/* Aviso de "cold start" mientras el checkout espera al backend. */
+.modal__hint {
+  margin-top: 10px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  text-align: center;
+  animation: billing-hint-pulse 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .modal__hint {
+    animation: none;
+  }
 }
 .modal__alt {
   margin: 12px 0 0;
