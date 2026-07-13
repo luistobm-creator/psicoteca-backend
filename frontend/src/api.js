@@ -23,21 +23,36 @@ async function authHeaders() {
   }
 }
 
-async function http(path) {
-  const res = await fetch(`${API_BASE}${path}`, { headers: await authHeaders() });
+// Petición genérica con el token de Supabase. Soporta método, cuerpo JSON y
+// respuestas 204 (sin cuerpo, p. ej. DELETE). Adjunta `.status` al error para
+// que el llamador distinga 401 (sin sesión), 403 (Pro), 409 (duplicado), etc.
+async function request(method, path, body) {
+  const headers = { ...(await authHeaders()) };
+  const opts = { method, headers };
+  if (body !== undefined) {
+    headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  }
+  const res = await fetch(`${API_BASE}${path}`, opts);
   if (!res.ok) {
     let detail = `HTTP ${res.status}`;
     try {
-      const body = await res.json();
-      if (body && body.detail) detail = body.detail;
+      const errBody = await res.json();
+      if (errBody && errBody.detail) detail = errBody.detail;
     } catch {
       /* respuesta sin cuerpo JSON */
     }
     const err = new Error(detail);
-    err.status = res.status; // permite distinguir 403 (contenido Pro), etc.
+    err.status = res.status;
     throw err;
   }
+  if (res.status === 204) return null;
   return res.json();
+}
+
+// GET simple (retrocompatible con las llamadas existentes).
+function http(path) {
+  return request('GET', path);
 }
 
 /** Resumen global de la biblioteca (para el Dashboard). */
@@ -94,4 +109,39 @@ export async function fetchContent(id) {
   }
   const blob = await res.blob();
   return { url: URL.createObjectURL(blob), type: blob.type, blob };
+}
+
+// ---------------------------------------------------------------------------
+// Favoritos (playlists). Todas requieren sesión: el backend reenvía el JWT a
+// Supabase y las políticas RLS garantizan que cada usuario solo ve/toca lo suyo.
+// ---------------------------------------------------------------------------
+
+/** Lista las playlists del usuario (cada una con su `item_count`). */
+export function getPlaylists() {
+  return request('GET', '/api/playlists');
+}
+
+/** Crea una playlist con el nombre dado. Devuelve la playlist creada. */
+export function createPlaylist(name) {
+  return request('POST', '/api/playlists', { name });
+}
+
+/** Detalle de una playlist con sus PDFs (metadata resuelta del catálogo). */
+export function getPlaylist(playlistId) {
+  return request('GET', `/api/playlists/${encodeURIComponent(playlistId)}`);
+}
+
+/** Agrega un documento a una playlist. Lanza Error con `.status === 409` si ya estaba. */
+export function addToPlaylist(playlistId, itemId) {
+  return request('POST', `/api/playlists/${encodeURIComponent(playlistId)}/items`, {
+    item_id: itemId,
+  });
+}
+
+/** Quita un documento de una playlist. */
+export function removeFromPlaylist(playlistId, itemId) {
+  return request(
+    'DELETE',
+    `/api/playlists/${encodeURIComponent(playlistId)}/items/${encodeURIComponent(itemId)}`
+  );
 }

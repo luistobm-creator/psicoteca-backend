@@ -1,6 +1,7 @@
 import { Folder, BookOpen, Lock } from './icons.jsx';
 import { fileType, formatSize, formatDate } from '../lib/fileType.js';
 import ProBadge from './ProBadge.jsx';
+import FavoriteButton from './FavoriteButton.jsx';
 
 export default function ItemCard({ item, activeId, plan = 'free', onOpenFolder, onOpenFile }) {
   const premium = !!item.is_premium;
@@ -46,30 +47,33 @@ export default function ItemCard({ item, activeId, plan = 'free', onOpenFolder, 
       .join(' · ') || 'Archivo';
 
   return (
-    <button
-      type="button"
-      className={
-        'card card--file' +
-        (isActive ? ' is-active' : '') +
-        (locked ? ' card--locked' : '')
-      }
-      onClick={() => onOpenFile(item)}
-      title={locked ? `${item.name} · Contenido Pro` : item.name}
-    >
-      <div className="card__icon card__icon--file" style={{ '--chip': color }}>
-        <span className="card__ext">{label}</span>
-      </div>
-      <div className="card__body">
-        <div className="card__name">{item.name}</div>
-        <div className="card__meta">{meta}</div>
-      </div>
-      {locked ? (
-        corner
-      ) : (
-        <span className="card__open" aria-hidden="true">
-          <BookOpen width={16} height={16} />
-        </span>
-      )}
-    </button>
+    <div className="card-wrap">
+      <button
+        type="button"
+        className={
+          'card card--file' +
+          (isActive ? ' is-active' : '') +
+          (locked ? ' card--locked' : '')
+        }
+        onClick={() => onOpenFile(item)}
+        title={locked ? `${item.name} · Contenido Pro` : item.name}
+      >
+        <div className="card__icon card__icon--file" style={{ '--chip': color }}>
+          <span className="card__ext">{label}</span>
+        </div>
+        <div className="card__body">
+          <div className="card__name">{item.name}</div>
+          <div className="card__meta">{meta}</div>
+        </div>
+        {locked ? (
+          corner
+        ) : (
+          <span className="card__open" aria-hidden="true">
+            <BookOpen width={16} height={16} />
+          </span>
+        )}
+      </button>
+      <FavoriteButton item={item} />
+    </div>
   );
 }

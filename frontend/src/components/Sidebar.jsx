@@ -1,5 +1,5 @@
 import TreeNode from './TreeNode.jsx';
-import { Library, X } from './icons.jsx';
+import { Library, X, Heart } from './icons.jsx';
 
 export default function Sidebar({
   tree,
@@ -9,6 +9,10 @@ export default function Sidebar({
   expanded,
   plan = 'free',
   open = false,
+  showFavorites = false,
+  favoritesActive = false,
+  favoritesCount = 0,
+  onOpenFavorites,
   onClose,
   onToggle,
   onSelect,
@@ -42,6 +46,29 @@ export default function Sidebar({
           </button>
         )}
       </div>
+
+      {showFavorites && (
+        <nav className="sidebar__nav" aria-label="Favoritos">
+          <button
+            type="button"
+            className={'sidebar__navitem' + (favoritesActive ? ' is-active' : '')}
+            onClick={onOpenFavorites}
+            aria-current={favoritesActive ? 'page' : undefined}
+          >
+            <span className="sidebar__navicon" aria-hidden="true">
+              <Heart
+                width={16}
+                height={16}
+                fill={favoritesActive ? 'currentColor' : 'none'}
+              />
+            </span>
+            <span className="sidebar__navlabel">Mis Favoritos</span>
+            {favoritesCount > 0 && (
+              <span className="sidebar__navcount">{favoritesCount}</span>
+            )}
+          </button>
+        </nav>
+      )}
 
       <div className="sidebar__tree">
         {loading && (

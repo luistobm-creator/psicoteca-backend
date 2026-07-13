@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import { X, Lock, Download } from './icons.jsx';
 import { fileType } from '../lib/fileType.js';
 import * as api from '../api.js';
+import FavoriteButton from './FavoriteButton.jsx';
 
 // El visor PDF.js (y su ~1 MB de dependencia) se carga solo al abrir un PDF.
 const PdfViewer = lazy(() => import('./PdfViewer.jsx'));
@@ -95,6 +96,7 @@ export default function ReaderPanel({ file, plan, onRequirePro, onClose }) {
           {file.name}
         </span>
         <div className="reader__actions">
+          <FavoriteButton item={file} className="fav--bar" />
           {canDownload && (
             <button
               type="button"

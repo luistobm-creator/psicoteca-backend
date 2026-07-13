@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar.jsx';
 import Breadcrumb from './components/Breadcrumb.jsx';
 import FileGrid from './components/FileGrid.jsx';
 import SearchResults from './components/SearchResults.jsx';
+import FavoritesView from './components/FavoritesView.jsx';
 import Pagination from './components/Pagination.jsx';
 import Dashboard from './components/Dashboard.jsx';
 import ReaderPanel from './components/ReaderPanel.jsx';
@@ -13,6 +14,7 @@ import UpgradeModal from './components/UpgradeModal.jsx';
 import { Sun, Moon, Library, Menu, X } from './components/icons.jsx';
 import { Link } from 'react-router-dom';
 import { useAuth } from './context/AuthContext.jsx';
+import { useFavorites } from './context/FavoritesContext.jsx';
 
 const PAGE_SIZE = 60;
 const SEARCH_LIMIT = 50;
@@ -51,6 +53,10 @@ export default function App() {
 
   // --- Sesión de usuario (estado global vía AuthContext) ---
   const { isAuthenticated, plan, loading: authLoading, refreshUser } = useAuth();
+  const { count: favoritesCount } = useFavorites();
+  // Vista «Mis Favoritos» activa. Tiene prioridad sobre carpeta/dashboard; la
+  // búsqueda manda si hay texto escrito (ver centerView).
+  const [favoritesMode, setFavoritesMode] = useState(false);
 
   // Al volver de Stripe Checkout (?checkout=success) refrescamos la sesión para
   // reflejar el plan Pro que el webhook acaba de activar, y limpiamos la URL.
@@ -289,6 +295,7 @@ export default function App() {
     (nodeOrId) => {
       const id = typeof nodeOrId === 'string' ? nodeOrId : nodeOrId.id;
       setSearchValue('');
+      setFavoritesMode(false);
       setSelectedId(id);
       setPage(1);
       revealFolder(id);
@@ -360,8 +367,16 @@ export default function App() {
 
   const goHome = useCallback(() => {
     setSearchValue('');
+    setFavoritesMode(false);
     setSelectedId(null);
     setOpenFile(null);
+  }, []);
+
+  // Abre la vista «Mis Favoritos» (limpia la búsqueda y cierra el drawer móvil).
+  const openFavorites = useCallback(() => {
+    setSearchValue('');
+    setFavoritesMode(true);
+    setNavOpen(false);
   }, []);
 
   // Breadcrumb: raíz -> carpeta seleccionada.
@@ -381,7 +396,13 @@ export default function App() {
   const readerOpen = !!openFile;
 
   // Qué se muestra en el panel central.
-  const centerView = searchMode ? 'search' : selectedId ? 'folder' : 'dashboard';
+  const centerView = searchMode
+    ? 'search'
+    : favoritesMode
+      ? 'favorites'
+      : selectedId
+        ? 'folder'
+        : 'dashboard';
 
   return (
     <div className="app">
@@ -466,6 +487,10 @@ export default function App() {
           expanded={expanded}
           plan={plan}
           open={navOpen}
+          showFavorites={isAuthenticated}
+          favoritesActive={centerView === 'favorites'}
+          favoritesCount={favoritesCount}
+          onOpenFavorites={openFavorites}
           onClose={closeNav}
           onToggle={toggleExpand}
           onSelect={handleSidebarSelect}
@@ -485,6 +510,29 @@ export default function App() {
                 onOpenFile={handleOpenFile}
               />
             </div>
+          )}
+
+          {centerView === 'favorites' && (
+            <>
+              <div className="center__header">
+                <div className="center__title">
+                  Mis Favoritos
+                  {favoritesCount > 0 && (
+                    <span className="center__count">
+                      {favoritesCount} guardado{favoritesCount === 1 ? '' : 's'}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="center__scroll">
+                <FavoritesView
+                  activeId={openFile?.id}
+                  plan={plan}
+                  compact={readerOpen}
+                  onOpenFile={handleOpenFile}
+                />
+              </div>
+            </>
           )}
 
           {centerView === 'search' && (

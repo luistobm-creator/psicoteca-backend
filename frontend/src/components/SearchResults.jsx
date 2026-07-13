@@ -1,5 +1,6 @@
 import { Folder, BookOpen, Lock } from './icons.jsx';
 import { fileType, formatSize, formatDate } from '../lib/fileType.js';
+import FavoriteButton from './FavoriteButton.jsx';
 
 function ResultRow({ item, activeId, plan = 'free', onOpenFolder, onOpenFile }) {
   const isFolder = item.is_folder;
@@ -53,16 +54,19 @@ function ResultRow({ item, activeId, plan = 'free', onOpenFolder, onOpenFile }) 
   }
 
   return (
-    <button
-      type="button"
-      className={
-        'result' + (isActive ? ' is-active' : '') + (locked ? ' result--locked' : '')
-      }
-      onClick={() => onOpenFile(item)}
-      title={locked ? `${item.name} · Contenido Pro` : item.name}
-    >
-      {inner}
-    </button>
+    <div className="result-wrap">
+      <button
+        type="button"
+        className={
+          'result' + (isActive ? ' is-active' : '') + (locked ? ' result--locked' : '')
+        }
+        onClick={() => onOpenFile(item)}
+        title={locked ? `${item.name} · Contenido Pro` : item.name}
+      >
+        {inner}
+      </button>
+      <FavoriteButton item={item} />
+    </div>
   );
 }
 
