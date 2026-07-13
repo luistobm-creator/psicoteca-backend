@@ -13,6 +13,7 @@ import logging
 import threading
 from typing import Iterator
 
+from google.auth.transport.requests import AuthorizedSession
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
@@ -216,3 +217,53 @@ def iter_media(service, file_id: str, export_mime: str | None = None, chunk_size
     except HttpError as exc:
         log.error("Drive get_media/export_media falló para %s: %s", file_id, exc)
         return
+
+
+# -----------------------------------------------------------------------------
+# Descarga por RANGOS (para el visor progresivo de PDF): pega directo a la URL de
+# media de Drive con una sesión autorizada por la Service Account, reenviando la
+# cabecera `Range`. Drive responde 206 Partial Content, así el visor pide solo el
+# índice + las páginas visibles en vez de bajar el archivo entero.
+# -----------------------------------------------------------------------------
+_DRIVE_MEDIA_URL = (
+    "https://www.googleapis.com/drive/v3/files/{id}?alt=media&supportsAllDrives=true"
+)
+
+_authorized_session: AuthorizedSession | None = None
+_authorized_session_lock = threading.Lock()
+
+
+def _get_authorized_session() -> AuthorizedSession:
+    """Sesión `requests` autorizada (con refresco de token) de la Service Account.
+
+    `requests.Session` es thread-safe para peticiones concurrentes, así que se
+    comparte una sola a nivel de módulo (a diferencia del cliente googleapiclient,
+    que no lo es y se cachea por hilo en `get_drive_service`).
+    """
+    global _authorized_session
+    if _authorized_session is None:
+        with _authorized_session_lock:
+            if _authorized_session is None:
+                _authorized_session = AuthorizedSession(
+                    _load_service_account_credentials()
+                )
+    return _authorized_session
+
+
+def open_media_stream(file_id: str, range_header: str | None = None):
+    """Abre un stream del binario de Drive soportando `Range`.
+
+    Devuelve el `Response` de `requests` (stream=True): el llamador lee el estado
+    (200 completo / 206 parcial), las cabeceras (Content-Range, Content-Length) y
+    el cuerpo por chunks con `iter_content`, y DEBE cerrarlo (`resp.close()`) al
+    terminar para devolver la conexión al pool.
+    """
+    session = _get_authorized_session()
+    headers = {"Range": range_header} if range_header else {}
+    # (connect timeout, read timeout): lectura amplia para archivos grandes.
+    return session.get(
+        _DRIVE_MEDIA_URL.format(id=file_id),
+        headers=headers,
+        stream=True,
+        timeout=(10, 300),
+    )

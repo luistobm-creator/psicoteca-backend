@@ -16,6 +16,8 @@ lleve el plan antiguo.
 """
 from __future__ import annotations
 
+import time
+
 import requests
 from fastapi import Header, HTTPException
 
@@ -35,6 +37,17 @@ def plan_from_user(user: dict) -> str:
     return "pro" if app_meta.get("plan") == "pro" else "free"
 
 
+# Caché en memoria del plan por token (TTL corto). Con la carga por RANGOS del
+# visor, /content recibe muchas peticiones seguidas del mismo usuario; sin esto
+# validaríamos el token contra Supabase en CADA una. TTL bajo para que un cambio
+# de plan (alta/baja) se refleje pronto. Solo se cachean validaciones EXITOSAS:
+# un fallo transitorio de Supabase nunca cachea 'free' para un usuario Pro. En un
+# alta, el frontend renueva el JWT (token distinto → cache miss), así que el Pro
+# se reconoce al instante pese a la caché.
+_PLAN_CACHE_TTL = 30.0  # segundos
+_plan_cache: dict[str, tuple[str, float]] = {}
+
+
 def get_user_plan(authorization: str | None = Header(default=None)) -> str:
     """Dependencia: devuelve 'pro' SOLO si el token es válido y el plan es Pro."""
     if not authorization or not authorization.lower().startswith("bearer "):
@@ -43,6 +56,12 @@ def get_user_plan(authorization: str | None = Header(default=None)) -> str:
         return "free"
 
     token = authorization.split(" ", 1)[1].strip()
+
+    now = time.monotonic()
+    cached = _plan_cache.get(token)
+    if cached is not None and cached[1] > now:
+        return cached[0]
+
     base = settings.supabase_url.rstrip("/")
     try:
         resp = requests.get(
@@ -58,7 +77,14 @@ def get_user_plan(authorization: str | None = Header(default=None)) -> str:
 
     if resp.status_code != 200:
         return "free"
-    return plan_from_user(resp.json())
+
+    plan = plan_from_user(resp.json())
+    _plan_cache[token] = (plan, now + _PLAN_CACHE_TTL)
+    # Poda perezosa de entradas caducadas para no crecer sin límite.
+    if len(_plan_cache) > 512:
+        for k in [key for key, (_p, exp) in _plan_cache.items() if exp <= now]:
+            _plan_cache.pop(k, None)
+    return plan
 
 
 def _require_setting(value: str | None, name: str) -> str:

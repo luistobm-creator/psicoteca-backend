@@ -72,6 +72,9 @@ app.add_middleware(
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
+    # Exponer estas cabeceras al JS del navegador es IMPRESCINDIBLE para que PDF.js
+    # haga carga por rangos cross-origin (necesita leer Content-Length/Content-Range).
+    expose_headers=["Content-Range", "Content-Length", "Accept-Ranges"],
 )
 
 # --- Routers ----------------------------------------------------------------

@@ -14,14 +14,14 @@ GET /api/items/{item_id}/content
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app.auth import get_user_plan
 from app.database import get_session
-from app.drive_client import get_drive_service, iter_media
+from app.drive_client import get_drive_service, iter_media, open_media_stream
 from app.models import Item
 from app.schemas import FolderItemsResponse, ItemRead, PageMeta
 
@@ -109,6 +109,7 @@ def get_item_content(
     download: bool = Query(
         False, description="Fuerza la descarga (attachment). Exclusivo del plan Pro."
     ),
+    range_header: str | None = Header(default=None, alias="Range"),
     session: Session = Depends(get_session),
     plan: str = Depends(get_user_plan),
 ) -> StreamingResponse:
@@ -140,17 +141,51 @@ def get_item_content(
         )
 
     native = item.mime_type.startswith(_GOOGLE_NATIVE_PREFIX)
-    export_mime = _EXPORT_MIME if native else None
     content_type = _EXPORT_MIME if native else (item.mime_type or "application/octet-stream")
-
     disposition = "attachment" if download else "inline"
-    stream = iter_media(get_drive_service(), item.id, export_mime)
+    base_headers = {
+        "Content-Disposition": f'{disposition}; filename="{_safe_filename(item.name, native)}"',
+        "Cache-Control": "private, max-age=300",
+        "X-Content-Type-Options": "nosniff",
+    }
+
+    # Documentos NATIVOS de Google (Docs/Sheets/Slides): se EXPORTAN a PDF al vuelo,
+    # sin tamaño conocido → no admiten Range. Se streamean completos (son pequeños).
+    if native:
+        return StreamingResponse(
+            iter_media(get_drive_service(), item.id, _EXPORT_MIME),
+            media_type=content_type,
+            headers=base_headers,
+        )
+
+    # Binarios (PDFs, etc.): admiten RANGE. Reenviamos la cabecera Range a Drive y
+    # devolvemos 206 Partial Content, así el visor carga de forma PROGRESIVA (índice
+    # + páginas visibles) en vez de bajar el archivo entero. Anunciamos Accept-Ranges
+    # para que PDF.js active la carga por rangos.
+    resp = open_media_stream(item.id, range_header)
+    if resp.status_code not in (200, 206):
+        resp.close()
+        raise HTTPException(
+            status_code=502, detail="No se pudo leer el archivo desde el almacenamiento."
+        )
+
+    headers = {**base_headers, "Accept-Ranges": "bytes"}
+    for h in ("Content-Length", "Content-Range"):
+        value = resp.headers.get(h)
+        if value:
+            headers[h] = value
+
+    def _body():
+        try:
+            for chunk in resp.iter_content(chunk_size=256 * 1024):
+                if chunk:
+                    yield chunk
+        finally:
+            resp.close()
+
     return StreamingResponse(
-        stream,
+        _body(),
+        status_code=resp.status_code,
         media_type=content_type,
-        headers={
-            "Content-Disposition": f'{disposition}; filename="{_safe_filename(item.name, native)}"',
-            "Cache-Control": "private, max-age=300",
-            "X-Content-Type-Options": "nosniff",
-        },
+        headers=headers,
     )
