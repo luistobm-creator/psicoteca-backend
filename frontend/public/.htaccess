@@ -15,9 +15,17 @@
   RewriteRule ^ index.html [L]
 </IfModule>
 
+# --- MIME: forzar JavaScript para .mjs ---------------------------------------
+# Hostinger sirve los .mjs como text/plain; el navegador BLOQUEA los module
+# workers con MIME no-JS, así que el worker de PDF.js no carga y ningún PDF
+# abre ("No se pudo abrir el PDF"). Forzamos un MIME de JavaScript válido.
+<IfModule mod_mime.c>
+  AddType text/javascript .mjs
+</IfModule>
+
 # --- Cache: assets con hash (immutable) cache largo; HTML sin cache ----------
 <IfModule mod_headers.c>
-  <FilesMatch "\.(js|css|woff2?|ttf|png|jpe?g|gif|svg|webp|avif|ico)$">
+  <FilesMatch "\.(js|mjs|css|woff2?|ttf|png|jpe?g|gif|svg|webp|avif|ico)$">
     Header set Cache-Control "public, max-age=31536000, immutable"
   </FilesMatch>
   <FilesMatch "\.html$">
@@ -27,5 +35,5 @@
 
 # --- Compresión --------------------------------------------------------------
 <IfModule mod_deflate.c>
-  AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json image/svg+xml
+  AddOutputFilterByType DEFLATE text/html text/css application/javascript application/x-javascript text/javascript application/json image/svg+xml
 </IfModule>
