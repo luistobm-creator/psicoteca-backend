@@ -17,7 +17,7 @@ lleve el plan antiguo.
 from __future__ import annotations
 
 import requests
-from fastapi import Header
+from fastapi import Header, HTTPException
 
 from app.config import settings
 
@@ -59,3 +59,52 @@ def get_user_plan(authorization: str | None = Header(default=None)) -> str:
     if resp.status_code != 200:
         return "free"
     return plan_from_user(resp.json())
+
+
+def _require_setting(value: str | None, name: str) -> str:
+    """Devuelve el valor o lanza 500 si falta (configuración incompleta)."""
+    if not value:
+        raise HTTPException(
+            status_code=500, detail=f"Configuración incompleta: falta {name}."
+        )
+    return value
+
+
+def bearer_token(authorization: str | None = Header(default=None)) -> str:
+    """Dependencia: extrae el JWT del header `Authorization: Bearer …` (o 401).
+
+    Útil para REENVIAR el token del usuario a PostgREST de Supabase, de modo que
+    las políticas RLS (`auth.uid() = user_id`) filtren por dueño.
+    """
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(status_code=401, detail="Falta el token de autenticación.")
+    return authorization.split(" ", 1)[1].strip()
+
+
+def require_user(authorization: str | None = Header(default=None)) -> dict:
+    """Dependencia: valida el Bearer token contra Supabase (/auth/v1/user) y
+    devuelve el usuario ({id, email, app_metadata, …}). Lanza 401 si falta o es
+    inválido. Para endpoints que EXIGEN un usuario autenticado (favoritos, etc.).
+
+    A diferencia de `get_user_plan` (que falla cerrado a 'free' para el gating de
+    contenido), aquí un token ausente/ inválido es un error 401 explícito.
+    """
+    token = bearer_token(authorization)
+    base = _require_setting(settings.supabase_url, "SUPABASE_URL").rstrip("/")
+    anon = _require_setting(settings.supabase_anon_key, "SUPABASE_ANON_KEY")
+    try:
+        resp = requests.get(
+            f"{base}/auth/v1/user",
+            headers={"apikey": anon, "Authorization": f"Bearer {token}"},
+            timeout=8,
+        )
+    except requests.RequestException:
+        raise HTTPException(
+            status_code=502, detail="No se pudo validar la sesión con Supabase."
+        )
+    if resp.status_code != 200:
+        raise HTTPException(status_code=401, detail="Sesión inválida o expirada.")
+    user = resp.json()
+    if not user.get("id"):
+        raise HTTPException(status_code=401, detail="No se pudo identificar al usuario.")
+    return user
