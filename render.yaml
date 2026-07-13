@@ -20,6 +20,12 @@ services:
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /api/health
     autoDeploy: true
+    # Filtro de build: NO redesplegar el backend cuando un commit toca SOLO el
+    # frontend (ese se despliega aparte en Hostinger). Las rutas son relativas a
+    # la raíz del repo; un cambio en backend/, render.yaml, etc. sí despliega.
+    buildFilter:
+      ignoredPaths:
+        - frontend/**
     envVars:
       # Versión de Python (usa una estable y bien soportada en Render).
       - key: PYTHON_VERSION
