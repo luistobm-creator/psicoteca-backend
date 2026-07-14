@@ -78,12 +78,16 @@ export function getFolderItems(
 }
 
 /** Búsqueda full-text por nombre y ruta. */
-export function search(q, { limit = 50, offset = 0, foldersOnly = false } = {}) {
+export function search(
+  q,
+  { limit = 50, offset = 0, foldersOnly = false, orderBy = 'relevance' } = {}
+) {
   const qs = new URLSearchParams({
     q,
     limit,
     offset,
     folders_only: foldersOnly,
+    order_by: orderBy,
   });
   return http(`/api/search?${qs}`);
 }

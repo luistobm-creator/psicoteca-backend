@@ -156,6 +156,8 @@ export default function App() {
   const [searchCapped, setSearchCapped] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState(null);
+  // Orden de los resultados de búsqueda (relevancia por defecto, la aplica el backend).
+  const [searchOrderBy, setSearchOrderBy] = useState('relevance');
   const searchSeq = useRef(0);
   const searchInputRef = useRef(null);
   const searchMode = searchValue.trim().length > 0;
@@ -257,7 +259,7 @@ export default function App() {
     setSearchLoading(true);
     const handle = setTimeout(() => {
       api
-        .search(q, { limit: SEARCH_LIMIT, offset: 0 })
+        .search(q, { limit: SEARCH_LIMIT, offset: 0, orderBy: searchOrderBy })
         .then((data) => {
           if (seq !== searchSeq.current) return;
           setSearchResults(data.items);
@@ -275,7 +277,7 @@ export default function App() {
         });
     }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(handle);
-  }, [searchValue]);
+  }, [searchValue, searchOrderBy]);
 
   // --- Acciones ---
   const revealFolder = useCallback(
@@ -549,7 +551,28 @@ export default function App() {
                     </span>
                   )}
                 </div>
-                <div className="center__hint">para «{searchValue.trim()}»</div>
+                <div className="center__tools">
+                  <span className="center__hint">para «{searchValue.trim()}»</span>
+                  {!searchTooShort && (
+                    <label className="sortselect" title="Ordenar resultados">
+                      <span className="sortselect__label">Ordenar</span>
+                      <select
+                        className="sortselect__input"
+                        value={searchOrderBy}
+                        onChange={(e) => setSearchOrderBy(e.target.value)}
+                        aria-label="Ordenar resultados"
+                      >
+                        <option value="relevance">Relevancia</option>
+                        <option value="name">Nombre (A–Z)</option>
+                        <option value="name_desc">Nombre (Z–A)</option>
+                        <option value="recent">Más recientes</option>
+                        <option value="oldest">Más antiguos</option>
+                        <option value="largest">Tamaño (mayor)</option>
+                        <option value="smallest">Tamaño (menor)</option>
+                      </select>
+                    </label>
+                  )}
+                </div>
               </div>
               <div className="center__scroll">
                 <SearchResults

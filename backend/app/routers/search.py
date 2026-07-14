@@ -22,6 +22,7 @@ búsqueda no pagina). Ambas cosas eran la causa de los timeouts en Render free.
 from __future__ import annotations
 
 import re
+from enum import Enum
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import text
@@ -46,6 +47,33 @@ _MIN_QUERY_CHARS = 3
 # paramos y el frontend muestra "N+". El total exacto solo era cosmético (la
 # búsqueda no pagina), así que acotarlo elimina un escaneo caro sin perder nada.
 _COUNT_CAP = 500
+
+
+class SearchOrderBy(str, Enum):
+    """Orden de los resultados de búsqueda (relevancia por defecto)."""
+
+    relevance = "relevance"  # BM25 (rank) — por defecto
+    name = "name"            # A → Z
+    name_desc = "name_desc"  # Z → A
+    recent = "recent"        # modificado: nuevos primero
+    oldest = "oldest"        # modificado: antiguos primero
+    largest = "largest"      # tamaño: mayores primero
+    smallest = "smallest"    # tamaño: menores primero
+
+
+# Fragmento ORDER BY por modo. SEGURO frente a inyección: la clave viene de un
+# enum validado por FastAPI (no de texto libre), igual que `folder_filter`; nunca
+# se interpola input del usuario. Para los modos no-relevancia se añade
+# `lower(i.name)` como desempate estable.
+_SEARCH_ORDER: dict[SearchOrderBy, str] = {
+    SearchOrderBy.relevance: "rank",
+    SearchOrderBy.name: "lower(i.name)",
+    SearchOrderBy.name_desc: "lower(i.name) DESC",
+    SearchOrderBy.recent: "i.modified_time DESC, lower(i.name)",
+    SearchOrderBy.oldest: "i.modified_time ASC, lower(i.name)",
+    SearchOrderBy.largest: "i.size DESC, lower(i.name)",
+    SearchOrderBy.smallest: "i.size ASC, lower(i.name)",
+}
 
 
 def build_match_query(q: str) -> str:
@@ -75,6 +103,10 @@ def search(
     limit: int = Query(50, ge=1, le=200, description="Máx. resultados a devolver"),
     offset: int = Query(0, ge=0, description="Desplazamiento para paginación"),
     folders_only: bool = Query(False, description="Devolver solo carpetas"),
+    order_by: SearchOrderBy = Query(
+        SearchOrderBy.relevance,
+        description="Orden: relevance (por defecto), name, name_desc, recent, oldest, largest, smallest",
+    ),
     session: Session = Depends(get_session),
 ) -> SearchResponse:
     match = build_match_query(q)
@@ -112,6 +144,10 @@ def search(
     ).scalar_one()
     total_capped = total >= _COUNT_CAP
 
+    # Fragmento ORDER BY según el modo pedido (relevancia por defecto). La clave es
+    # un enum validado, así que la interpolación es segura (ver _SEARCH_ORDER).
+    order_clause = _SEARCH_ORDER[order_by]
+
     rows = (
         session.execute(
             text(
@@ -122,7 +158,7 @@ def search(
                 WHERE items_fts MATCH :match
                   AND i.trashed = 0
                   {folder_filter}
-                ORDER BY rank
+                ORDER BY {order_clause}
                 LIMIT :limit OFFSET :offset
                 """
             ),
