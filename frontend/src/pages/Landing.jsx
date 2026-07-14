@@ -339,6 +339,8 @@ export default function Landing() {
             <Link to="/app">Explorar la biblioteca</Link>
             <Link to="/login">Iniciar sesión</Link>
             <Link to="/register">Crear cuenta</Link>
+            <Link to="/terminos">Términos y Condiciones</Link>
+            <Link to="/privacidad">Aviso de Privacidad</Link>
           </nav>
         </div>
         <div className="lp-footer__legal">

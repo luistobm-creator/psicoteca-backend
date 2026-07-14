@@ -2057,6 +2057,23 @@ a {
   opacity: 0.62;
   cursor: not-allowed;
 }
+.auth__consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.auth__consent-check {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
 .auth__footer {
   font-size: 13.5px;
   color: var(--text-muted);
@@ -3213,4 +3230,191 @@ a {
 .iconbtn--pro:hover {
   background: var(--pro-weak);
   color: var(--pro-strong);
+}
+
+/* ---------- Páginas legales (Términos, Privacidad) --------------------------- */
+.lp-legal {
+  padding: clamp(28px, 5vw, 56px) 0 clamp(48px, 8vw, 88px);
+}
+.lp-legal__wrap {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 22px;
+}
+
+/* Encabezado */
+.lp-legal__head {
+  margin-bottom: 26px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+.lp-legal__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--accent);
+  background: var(--accent-weak);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin: 0 0 14px;
+}
+.lp-legal__title {
+  font-size: clamp(26px, 5vw, 38px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 10px;
+}
+.lp-legal__meta {
+  color: var(--text-soft);
+  font-size: 13.5px;
+  margin: 0;
+}
+
+/* Aviso de borrador */
+.lp-legal__draft {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  margin: 0 0 26px;
+  padding: 13px 16px;
+  background: var(--pro-weak);
+  border: 1px solid var(--pro-border);
+  border-radius: var(--radius-md);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+.lp-legal__draft svg {
+  color: var(--pro);
+  flex: none;
+  margin-top: 2px;
+}
+
+/* Ficha de datos del titular */
+.lp-legal__facts {
+  margin: 0 0 26px;
+  padding: 16px 18px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  display: grid;
+  gap: 10px;
+}
+.lp-legal__facts > div {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 4px 14px;
+  align-items: baseline;
+}
+.lp-legal__facts dt {
+  color: var(--text-soft);
+  font-size: 13px;
+  font-weight: 600;
+}
+.lp-legal__facts dd {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* Párrafo introductorio (aceptación) */
+.lp-legal__lead {
+  font-size: 15.5px;
+  color: var(--text-muted);
+  margin: 0 0 28px;
+}
+
+/* Índice */
+.lp-legal__toc {
+  margin: 0 0 34px;
+  padding: 18px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.lp-legal__toc-title {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-soft);
+  font-weight: 700;
+  margin: 0 0 12px;
+}
+.lp-legal__toc ol {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 8px;
+  font-size: 14px;
+}
+.lp-legal__toc a {
+  color: var(--text-muted);
+  text-decoration: none;
+}
+.lp-legal__toc a:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+/* Secciones */
+.lp-legal__section {
+  margin: 0 0 30px;
+  scroll-margin-top: 84px; /* el ancla no queda oculta bajo el nav sticky */
+}
+.lp-legal__section h2 {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0 0 12px;
+}
+.lp-legal__section p {
+  margin: 0 0 12px;
+  font-size: 15px;
+  line-height: 1.72;
+}
+.lp-legal__section ol,
+.lp-legal__section ul {
+  margin: 0 0 14px;
+  padding-left: 22px;
+}
+.lp-legal__section li {
+  margin: 0 0 8px;
+  font-size: 15px;
+  line-height: 1.65;
+}
+.lp-legal__alpha {
+  list-style: lower-alpha;
+}
+
+/* Enlaces dentro del cuerpo legal (correos mailto, INAI…). No afecta al índice,
+   que tiene su propia regla (.lp-legal__toc a). */
+.lp-legal__facts a,
+.lp-legal__section a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+.lp-legal__facts a:hover,
+.lp-legal__section a:hover {
+  text-decoration: underline;
+}
+
+/* Marcador de dato pendiente de rellenar */
+.lp-ph {
+  background: var(--accent-weak);
+  color: var(--accent);
+  border: 1px dashed var(--accent-soft);
+  border-radius: 6px;
+  padding: 0.5px 6px;
+  font-size: 0.92em;
+  font-weight: 600;
+  font-style: normal;
+}
+
+@media (max-width: 520px) {
+  .lp-legal__facts > div {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
 }

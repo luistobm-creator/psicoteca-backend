@@ -15,6 +15,7 @@ export default function Register() {
   const [error, setError] = useState(null);
   const [notice, setNotice] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [accepted, setAccepted] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) navigate('/app', { replace: true });
@@ -24,6 +25,10 @@ export default function Register() {
     e.preventDefault();
     setError(null);
     setNotice(null);
+    if (!accepted) {
+      setError('Debes aceptar los Términos y Condiciones y el Aviso de Privacidad para crear tu cuenta.');
+      return;
+    }
     setSubmitting(true);
     try {
       const { needsConfirmation } = await register({ name, email, password });
@@ -126,7 +131,31 @@ export default function Register() {
           </span>
         </label>
 
-        <button className="auth__submit" type="submit" disabled={submitting}>
+        <label className="auth__consent">
+          <input
+            type="checkbox"
+            className="auth__consent-check"
+            checked={accepted}
+            onChange={(e) => setAccepted(e.target.checked)}
+          />
+          <span>
+            He leído y acepto los{' '}
+            <Link className="link" to="/terminos" target="_blank" rel="noreferrer">
+              Términos y Condiciones
+            </Link>{' '}
+            y el{' '}
+            <Link className="link" to="/privacidad" target="_blank" rel="noreferrer">
+              Aviso de Privacidad
+            </Link>
+            .
+          </span>
+        </label>
+
+        <button
+          className="auth__submit"
+          type="submit"
+          disabled={submitting || !accepted}
+        >
           {submitting ? 'Creando cuenta…' : 'Crear cuenta'}
         </button>
       </form>
