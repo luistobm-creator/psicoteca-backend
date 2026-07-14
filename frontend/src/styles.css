@@ -900,6 +900,52 @@ a {
   padding: 4px 12px;
   white-space: nowrap;
 }
+.center__tools {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.sortselect {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.sortselect:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-weak);
+}
+.sortselect__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.sortselect__input {
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+/* Las <option> heredan el fondo nativo del SO; forzamos los colores del tema. */
+.sortselect__input option {
+  background: var(--surface);
+  color: var(--text);
+}
+@media (max-width: 480px) {
+  /* En pantallas estrechas basta el desplegable; la etiqueta ocuparía de más. */
+  .sortselect__label {
+    display: none;
+  }
+}
 .center__scroll {
   flex: 1 1 auto;
   overflow-y: auto;

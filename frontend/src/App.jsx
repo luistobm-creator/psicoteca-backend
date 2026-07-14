@@ -119,6 +119,8 @@ export default function App() {
   const [page, setPage] = useState(1);
   const [itemsLoading, setItemsLoading] = useState(false);
   const [itemsError, setItemsError] = useState(null);
+  // Orden del listado (persistente entre carpetas). Lo aplica el backend.
+  const [orderBy, setOrderBy] = useState('name');
 
   // --- Lector (panel derecho) ---
   const [openFile, setOpenFile] = useState(null);
@@ -210,13 +212,13 @@ export default function App() {
     };
   }, []);
 
-  // Cargar contenido cuando cambia la carpeta o la página.
+  // Cargar contenido cuando cambia la carpeta, la página o el orden.
   useEffect(() => {
     if (!selectedId) return undefined;
     let cancelled = false;
     setItemsLoading(true);
     api
-      .getFolderItems(selectedId, { page, pageSize: PAGE_SIZE })
+      .getFolderItems(selectedId, { page, pageSize: PAGE_SIZE, orderBy })
       .then((data) => {
         if (cancelled) return;
         setItems(data.items);
@@ -235,7 +237,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [selectedId, page]);
+  }, [selectedId, page, orderBy]);
 
   // Búsqueda con debounce + guarda contra respuestas fuera de orden.
   useEffect(() => {
@@ -571,11 +573,32 @@ export default function App() {
             <>
               <div className="center__header">
                 <Breadcrumb trail={trail} onNavigate={selectFolder} />
-                {pagination && (
-                  <span className="center__count">
-                    {pagination.total} elemento{pagination.total === 1 ? '' : 's'}
-                  </span>
-                )}
+                <div className="center__tools">
+                  {pagination && (
+                    <span className="center__count">
+                      {pagination.total} elemento{pagination.total === 1 ? '' : 's'}
+                    </span>
+                  )}
+                  <label className="sortselect" title="Ordenar contenido">
+                    <span className="sortselect__label">Ordenar</span>
+                    <select
+                      className="sortselect__input"
+                      value={orderBy}
+                      onChange={(e) => {
+                        setOrderBy(e.target.value);
+                        setPage(1);
+                      }}
+                      aria-label="Ordenar contenido"
+                    >
+                      <option value="name">Nombre (A–Z)</option>
+                      <option value="name_desc">Nombre (Z–A)</option>
+                      <option value="recent">Más recientes</option>
+                      <option value="oldest">Más antiguos</option>
+                      <option value="largest">Tamaño (mayor)</option>
+                      <option value="smallest">Tamaño (menor)</option>
+                    </select>
+                  </label>
+                </div>
               </div>
               <div className="center__scroll">
                 <FileGrid

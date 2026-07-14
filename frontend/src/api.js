@@ -65,9 +65,15 @@ export function getTree() {
   return http('/api/tree');
 }
 
-/** Contenido paginado (carpetas + archivos) de una carpeta. */
-export function getFolderItems(folderId, { page = 1, pageSize = 60 } = {}) {
-  const qs = new URLSearchParams({ page, page_size: pageSize });
+/**
+ * Contenido paginado (carpetas + archivos) de una carpeta.
+ * `orderBy`: name | name_desc | recent | oldest | largest | smallest.
+ */
+export function getFolderItems(
+  folderId,
+  { page = 1, pageSize = 60, orderBy = 'name' } = {}
+) {
+  const qs = new URLSearchParams({ page, page_size: pageSize, order_by: orderBy });
   return http(`/api/folders/${encodeURIComponent(folderId)}/items?${qs}`);
 }
 

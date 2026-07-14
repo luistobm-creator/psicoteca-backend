@@ -14,6 +14,8 @@ GET /api/items/{item_id}/content
 """
 from __future__ import annotations
 
+from enum import Enum
+
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy import func
@@ -28,6 +30,39 @@ from app.schemas import FolderItemsResponse, ItemRead, PageMeta
 router = APIRouter(prefix="/api", tags=["items"])
 
 
+class OrderBy(str, Enum):
+    """Modos de ordenación del contenido de una carpeta (alimenta el selector del front)."""
+
+    name = "name"            # A → Z (por defecto)
+    name_desc = "name_desc"  # Z → A
+    recent = "recent"        # modificado: nuevos primero
+    oldest = "oldest"        # modificado: antiguos primero
+    largest = "largest"      # tamaño: mayores primero
+    smallest = "smallest"    # tamaño: menores primero
+
+
+def _order_columns(order_by: OrderBy) -> list:
+    """Traduce el modo de ordenación a columnas ORDER BY.
+
+    Regla transversal a TODOS los modos: las carpetas van siempre primero
+    (is_folder desc) y el nombre es el desempate final, para un orden estable y
+    predecible; el modo solo cambia el criterio intermedio. En SQLite los NULL
+    (el `size` de carpetas y de Docs nativos) quedan al final en DESC y al
+    principio en ASC, lo cual es aceptable: las carpetas ya van separadas arriba.
+    """
+    folders_first = Item.is_folder.desc()
+    name_asc = func.lower(Item.name)
+    columns = {
+        OrderBy.name: [folders_first, name_asc],
+        OrderBy.name_desc: [folders_first, func.lower(Item.name).desc()],
+        OrderBy.recent: [folders_first, Item.modified_time.desc(), name_asc],
+        OrderBy.oldest: [folders_first, Item.modified_time.asc(), name_asc],
+        OrderBy.largest: [folders_first, Item.size.desc(), name_asc],
+        OrderBy.smallest: [folders_first, Item.size.asc(), name_asc],
+    }
+    return columns[order_by]
+
+
 @router.get(
     "/folders/{folder_id}/items",
     response_model=FolderItemsResponse,
@@ -37,6 +72,10 @@ def get_folder_items(
     folder_id: str,
     page: int = Query(1, ge=1, description="Número de página (empieza en 1)"),
     page_size: int = Query(100, ge=1, le=500, description="Elementos por página"),
+    order_by: OrderBy = Query(
+        OrderBy.name,
+        description="Orden: name (A-Z), name_desc (Z-A), recent, oldest, largest, smallest",
+    ),
     session: Session = Depends(get_session),
 ) -> FolderItemsResponse:
     # 1) Validar que la carpeta existe, está activa y es realmente una carpeta.
@@ -57,11 +96,12 @@ def get_folder_items(
         .where(Item.parent_id == folder_id, Item.trashed == False)  # noqa: E712
     ) or 0
 
-    # 3) Página solicitada: carpetas primero, luego archivos, orden alfabético.
+    # 3) Página solicitada: carpetas primero y, dentro de cada grupo, el orden
+    #    que pida el cliente (por defecto alfabético). Ver `_order_columns`.
     items = session.exec(
         select(Item)
         .where(Item.parent_id == folder_id, Item.trashed == False)  # noqa: E712
-        .order_by(Item.is_folder.desc(), func.lower(Item.name))
+        .order_by(*_order_columns(order_by))
         .offset((page - 1) * page_size)
         .limit(page_size)
     ).all()
