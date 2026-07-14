@@ -6,6 +6,7 @@ import App from './App.jsx';
 import Landing from './pages/Landing.jsx';
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
+import Settings from './pages/Settings.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { FavoritesProvider } from './context/FavoritesContext.jsx';
 import './styles.css';
@@ -21,6 +22,7 @@ createRoot(document.getElementById('root')).render(
             <Route path="/app" element={<App />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/configuracion" element={<Settings />} />
             {/* Cualquier ruta desconocida vuelve a la landing. */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

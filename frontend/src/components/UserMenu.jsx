@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ChevronDown, Crown, Settings, LogOut, Sparkles } from './icons.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { startProCheckout, openBillingPortal } from '../lib/stripe.js';
@@ -9,6 +10,7 @@ import PlanSelector from './PlanSelector.jsx';
 // el Header decide cuándo renderizarlo.
 export default function UserMenu() {
   const { user, plan, logout } = useAuth();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const isPro = plan === 'pro';
@@ -194,15 +196,15 @@ export default function UserMenu() {
 
           <button
             type="button"
-            className="usermenu__item usermenu__item--soon"
+            className="usermenu__item"
             role="menuitem"
-            disabled
-            aria-disabled="true"
-            title="Disponible próximamente"
+            onClick={() => {
+              setOpen(false);
+              navigate('/configuracion');
+            }}
           >
             <Settings width={16} height={16} />
             Configuración
-            <span className="usermenu__soon">Próximamente</span>
           </button>
           <button
             type="button"

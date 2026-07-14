@@ -171,3 +171,17 @@ export function removeFromPlaylist(playlistId, itemId) {
     `/api/playlists/${encodeURIComponent(playlistId)}/items/${encodeURIComponent(itemId)}`
   );
 }
+
+// ---------------------------------------------------------------------------
+// Cuenta
+// ---------------------------------------------------------------------------
+
+/**
+ * Borra DEFINITIVAMENTE la cuenta del usuario autenticado. El backend cancela
+ * primero la suscripción de Stripe (si la hay) y luego elimina el usuario en
+ * Supabase (sus favoritos caen por cascade). Responde 204 (sin cuerpo). Requiere
+ * sesión: el backend identifica al usuario por su token (no por un id de entrada).
+ */
+export function deleteAccount() {
+  return request('DELETE', '/api/account');
+}
