@@ -71,7 +71,7 @@ class Settings(BaseSettings):
         "CURSOS,"
         "TALLERES DE PSICOLOGÍA,"
         "COMPENDIO EDITORIAL,"
-        "EDITORIAL Pirámide Psicología 1-a 11(epub azw),"
+        "EDITORIAL Pirámide Psicología  1-a 11(epub azw),"
         "BIODESCODIFICACION Y BIONEUROEMOCION"
     )
 
