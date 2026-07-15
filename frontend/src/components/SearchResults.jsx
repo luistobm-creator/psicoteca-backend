@@ -1,12 +1,15 @@
 import { Folder, BookOpen, Lock } from './icons.jsx';
 import { fileType, formatSize, formatDate } from '../lib/fileType.js';
 import FavoriteButton from './FavoriteButton.jsx';
+import ProBadge from './ProBadge.jsx';
 
 function ResultRow({ item, activeId, plan = 'free', onOpenFolder, onOpenFile }) {
   const isFolder = item.is_folder;
   const ft = isFolder ? null : fileType(item);
   const isActive = item.id === activeId;
-  const locked = !!item.is_premium && plan !== 'pro';
+  const premium = !!item.is_premium;
+  // Solo se bloquean los ARCHIVOS Pro; las carpetas Pro son navegables (chip "Pro").
+  const fileLocked = premium && !isFolder && plan !== 'pro';
 
   // Ruta del contenedor (sin el propio nombre) para ubicar el resultado.
   const parentPath = (item.path || '').split('/').slice(0, -1).join(' › ');
@@ -31,9 +34,11 @@ function ResultRow({ item, activeId, plan = 'free', onOpenFolder, onOpenFile }) 
       </div>
       <div className="result__meta">{meta}</div>
       <span className="result__open" aria-hidden="true">
-        {locked ? (
+        {isFolder ? (
+          premium ? <ProBadge plan={plan} size="xs" /> : null
+        ) : fileLocked ? (
           <Lock width={15} height={15} />
-        ) : isFolder ? null : (
+        ) : (
           <BookOpen width={15} height={15} />
         )}
       </span>
@@ -44,9 +49,9 @@ function ResultRow({ item, activeId, plan = 'free', onOpenFolder, onOpenFile }) 
     return (
       <button
         type="button"
-        className={'result result--folder' + (locked ? ' result--locked' : '')}
+        className="result result--folder"
         onClick={() => onOpenFolder(item)}
-        title={locked ? `${item.name} · Contenido Pro` : item.name}
+        title={premium ? `${item.name} · Contenido Pro` : item.name}
       >
         {inner}
       </button>
@@ -58,10 +63,10 @@ function ResultRow({ item, activeId, plan = 'free', onOpenFolder, onOpenFile }) 
       <button
         type="button"
         className={
-          'result' + (isActive ? ' is-active' : '') + (locked ? ' result--locked' : '')
+          'result' + (isActive ? ' is-active' : '') + (fileLocked ? ' result--locked' : '')
         }
         onClick={() => onOpenFile(item)}
-        title={locked ? `${item.name} · Contenido Pro` : item.name}
+        title={fileLocked ? `${item.name} · Contenido Pro` : item.name}
       >
         {inner}
       </button>

@@ -307,29 +307,20 @@ export default function App() {
     [revealFolder]
   );
 
-  // --- Gating visual: interceptar clics en contenido Pro (usuarios no-Pro) ---
+  // --- Gating visual: interceptar SOLO archivos Pro (usuarios no-Pro) --------
   // El item que disparó el modal de upgrade (null = modal cerrado) y el motivo
-  // ('content' = contenido Pro bloqueado, 'download' = descarga solo-Pro).
+  // ('content' = archivo Pro bloqueado, 'download' = descarga solo-Pro).
   const [upgradeItem, setUpgradeItem] = useState(null);
   const [upgradeReason, setUpgradeReason] = useState('content');
 
+  // Las CARPETAS Pro son navegables para TODOS (escaparate): un usuario gratis
+  // entra, ve el listado de archivos con su candado y, al intentar ABRIR un
+  // archivo Pro, salta el modal (ver handleOpenFile). El bloqueo real de la
+  // lectura/descarga lo aplica el backend con un 403 en el proxy de contenido,
+  // así que abrir la carpeta solo expone metadatos (nombres), nunca el archivo.
   const handleOpenFolder = useCallback(
-    (nodeOrId) => {
-      // Puede llegar un id (breadcrumb / navegación ya autorizada) o un objeto
-      // (clic del usuario). Solo bloqueamos objetos Pro para usuarios no-Pro.
-      if (
-        nodeOrId &&
-        typeof nodeOrId === 'object' &&
-        nodeOrId.is_premium &&
-        plan !== 'pro'
-      ) {
-        setUpgradeReason('content');
-        setUpgradeItem(nodeOrId);
-        return;
-      }
-      selectFolder(nodeOrId);
-    },
-    [plan, selectFolder]
+    (nodeOrId) => selectFolder(nodeOrId),
+    [selectFolder]
   );
 
   const handleOpenFile = useCallback(

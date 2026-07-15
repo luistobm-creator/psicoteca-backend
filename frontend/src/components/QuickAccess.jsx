@@ -1,6 +1,7 @@
 import { Star, ArrowRight, Lock } from './icons.jsx';
 import { categoryIcon } from '../lib/categoryIcons.jsx';
 import { fileType } from '../lib/fileType.js';
+import ProBadge from './ProBadge.jsx';
 
 // "Accesos rápidos": si el usuario ya ha abierto documentos, muestra los más
 // recientes (persistidos en localStorage por App). Si aún no hay historial,
@@ -61,26 +62,21 @@ export default function QuickAccess({
               );
             })
           : suggestions.map((f) => {
-              const locked = !!f.is_premium && !isPro;
+              const premium = !!f.is_premium;
               return (
                 <button
                   key={f.id}
                   type="button"
-                  className={
-                    'quick__item quick__item--folder' +
-                    (locked ? ' quick__item--locked' : '')
-                  }
+                  className="quick__item quick__item--folder"
                   onClick={() => onOpenFolder(f)}
-                  title={locked ? `${f.name} · Contenido Pro` : f.name}
+                  title={premium ? `${f.name} · Contenido Pro` : f.name}
                 >
                   <span className="quick__icon" aria-hidden="true">
                     {categoryIcon(f.name, 17)}
                   </span>
                   <span className="quick__name">{f.name}</span>
-                  {locked ? (
-                    <span className="quick__lock" aria-label="Contenido Pro">
-                      <Lock width={13} height={13} />
-                    </span>
+                  {premium ? (
+                    <ProBadge plan={plan} size="xs" />
                   ) : (
                     <ArrowRight className="quick__arrow" width={14} height={14} />
                   )}

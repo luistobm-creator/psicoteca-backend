@@ -57,9 +57,21 @@ class Settings(BaseSettings):
     # eso va incluida pese a su tamaño. Para añadir más carpetas de alto valor
     # basta con editar la env var PREMIUM_FOLDERS (no requiere re-deploy).
     premium_folders: str = (
-        "DSM V,"
         "1012 TEST,"
+        "DSM V,"
+        "FORMATOS CLINICOS,"
+        "FORMATOS EDITABLES,"
+        "PLANILLAS HISTORIA CLINICA,"
+        "PLANILLA SELECCION DE PERSONAL,"
+        "GUIAS CLINICAS,"
         "E M D R Y BRAINSPOTTYNG,"
+        "INTERVENCION EN CRISIS,"
+        "TRASTORNOS COMPLEJOS,"
+        "SUICIDIO,"
+        "CURSOS,"
+        "TALLERES DE PSICOLOGÍA,"
+        "COMPENDIO EDITORIAL,"
+        "EDITORIAL Pirámide Psicología 1-a 11(epub azw),"
         "BIODESCODIFICACION Y BIONEUROEMOCION"
     )
 

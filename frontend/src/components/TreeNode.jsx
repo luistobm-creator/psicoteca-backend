@@ -12,19 +12,17 @@ export default function TreeNode({
   const isOpen = expanded.has(node.id);
   const isSelected = node.id === selectedId;
   const hasChildren = (node.child_count ?? node.children?.length ?? 0) > 0;
-  const locked = !!node.is_premium && plan !== 'pro';
+  // Carpeta Pro para un usuario no-Pro: mostramos un candado compacto como señal
+  // de "contenido de pago", pero la fila NO se atenúa: la carpeta es navegable.
+  const premiumLock = !!node.is_premium && plan !== 'pro';
 
   return (
     <div className="tree__node">
       <div
-        className={
-          'tree__row' +
-          (isSelected ? ' is-selected' : '') +
-          (locked ? ' tree__row--locked' : '')
-        }
+        className={'tree__row' + (isSelected ? ' is-selected' : '')}
         style={{ paddingLeft: 6 + depth * 14 }}
         onClick={() => onSelect(node)}
-        title={locked ? `${node.name} · Contenido Pro` : node.name}
+        title={premiumLock ? `${node.name} · Contenido Pro` : node.name}
       >
         <button
           type="button"
@@ -46,7 +44,7 @@ export default function TreeNode({
           {isOpen && hasChildren ? <FolderOpen width={16} height={16} /> : <Folder width={16} height={16} />}
         </span>
         <span className="tree__label">{node.name}</span>
-        {locked ? (
+        {premiumLock ? (
           <span className="tree__lock" aria-label="Contenido Pro" title="Contenido Pro">
             <Lock width={12} height={12} />
           </span>

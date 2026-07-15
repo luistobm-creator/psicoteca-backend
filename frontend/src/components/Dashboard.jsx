@@ -1,4 +1,4 @@
-import { Files, Folder, Clock, ArrowRight, LayoutGrid, Lock } from './icons.jsx';
+import { Files, Folder, Clock, ArrowRight, LayoutGrid } from './icons.jsx';
 import { formatDate } from '../lib/fileType.js';
 import { categoryIcon } from '../lib/categoryIcons.jsx';
 import { Skeleton, SkeletonCollections } from './Skeleton.jsx';
@@ -96,30 +96,19 @@ export default function Dashboard({
           <div className="collections">
             {topFolders.map((f) => {
               const premium = !!f.is_premium;
-              const locked = premium && plan !== 'pro';
               return (
                 <button
                   key={f.id}
                   type="button"
-                  className={'collection' + (locked ? ' collection--locked' : '')}
+                  className="collection"
                   onClick={() => onOpenFolder(f)}
-                  title={f.name}
+                  title={premium ? `${f.name} · Contenido Pro` : f.name}
                 >
                   <span className="collection__top">
                     <span className="collection__icon">
                       {categoryIcon(f.name, 20)}
                     </span>
-                    {locked ? (
-                      <span
-                        className="collection__lock"
-                        title="Contenido Pro"
-                        aria-label="Contenido Pro"
-                      >
-                        <Lock width={16} height={16} />
-                      </span>
-                    ) : (
-                      premium && <ProBadge plan={plan} className="collection__badge" />
-                    )}
+                    {premium && <ProBadge plan={plan} className="collection__badge" />}
                   </span>
                   <span className="collection__name">{f.name}</span>
                   <span className="collection__meta">
