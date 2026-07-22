@@ -210,3 +210,31 @@ export function createGlosarioTermino({ termino, definicion, categoria }) {
 export function deleteGlosarioTermino(id) {
   return request('DELETE', `/api/glosario/${encodeURIComponent(id)}`);
 }
+
+// ---------------------------------------------------------------------------
+// Agenda de citas. Mismo esquema de sesión/RLS que el Glosario.
+// ---------------------------------------------------------------------------
+
+/** Lista las citas programadas del usuario. `desde`/`hasta`: 'YYYY-MM-DD' (opcionales). */
+export function getAgenda({ desde, hasta } = {}) {
+  const qs = new URLSearchParams();
+  if (desde) qs.set('desde', desde);
+  if (hasta) qs.set('hasta', hasta);
+  const suffix = qs.toString() ? `?${qs}` : '';
+  return request('GET', `/api/agenda${suffix}`);
+}
+
+/** Crea una cita. `payload`: paciente_nombre, fecha, hora, tipo_sesion, duracion_minutos, modalidad, recordatorio. */
+export function createCita(payload) {
+  return request('POST', '/api/agenda', payload);
+}
+
+/** Actualiza una cita (parcial): reprogramar (fecha/hora), cancelar (estado) o alternar recordatorio. */
+export function updateCita(id, changes) {
+  return request('PATCH', `/api/agenda/${encodeURIComponent(id)}`, changes);
+}
+
+/** Elimina una cita definitivamente. */
+export function deleteCita(id) {
+  return request('DELETE', `/api/agenda/${encodeURIComponent(id)}`);
+}

@@ -67,7 +67,7 @@ export const PROFILE_MENU = [
 // Rutas que YA tienen una herramienta real construida (además de /app y
 // /configuracion, que ya se excluían). Cada una que se agregue aquí deja de
 // caer en la página "Próximamente".
-const BUILT_ROUTES = new Set(['/app', '/configuracion', '/app/glosario']);
+const BUILT_ROUTES = new Set(['/app', '/configuracion', '/app/glosario', '/app/agenda']);
 
 // Rutas nuevas (no existentes aún) que deben caer en la página "Próximamente".
 // Se deriva de PROFILE_MENU en vez de mantenerse a mano, para que nunca se
