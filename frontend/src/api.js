@@ -340,3 +340,25 @@ export async function fetchNotaVozAudio(id) {
   const blob = await res.blob();
   return URL.createObjectURL(blob);
 }
+
+// ---------------------------------------------------------------------------
+// Tareas terapéuticas. Mismo esquema de sesión/RLS. Lista TODAS las tareas del
+// usuario (across pacientes) salvo que se pida un paciente puntual; "borrar"
+// normal es cancelar (PATCH estado), no hay botón de borrado duro en la UI.
+// ---------------------------------------------------------------------------
+
+/** Lista las tareas (pendientes + completadas, nunca canceladas). `pacienteId` opcional. */
+export function getTareas(pacienteId) {
+  const qs = pacienteId ? `?paciente_id=${encodeURIComponent(pacienteId)}` : '';
+  return request('GET', `/api/tareas${qs}`);
+}
+
+/** Asigna una tarea. `payload`: paciente_id, titulo, tipo, descripcion, fecha_limite (los últimos 2 opcionales). */
+export function createTarea(payload) {
+  return request('POST', '/api/tareas', payload);
+}
+
+/** Actualiza una tarea: editar campos, marcar completada/reabrir (estado) o cancelar (estado). */
+export function updateTarea(id, changes) {
+  return request('PATCH', `/api/tareas/${encodeURIComponent(id)}`, changes);
+}

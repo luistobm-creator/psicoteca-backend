@@ -74,6 +74,7 @@ const BUILT_ROUTES = new Set([
   '/app/agenda',
   '/app/pacientes',
   '/app/notas-voz',
+  '/app/tareas',
 ]);
 
 // Rutas nuevas (no existentes aún) que deben caer en la página "Próximamente".

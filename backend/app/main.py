@@ -40,6 +40,7 @@ from app.routers import (
     playlists,
     search,
     stats,
+    tareas,
     tree,
 )
 from app.scheduler import (
@@ -101,6 +102,7 @@ app.include_router(glosario.router)
 app.include_router(agenda.router)
 app.include_router(pacientes.router)
 app.include_router(notas_voz.router)
+app.include_router(tareas.router)
 
 
 # --- Endpoints utilitarios --------------------------------------------------
