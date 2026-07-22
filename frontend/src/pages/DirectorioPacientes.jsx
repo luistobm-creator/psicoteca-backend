@@ -112,7 +112,7 @@ export default function DirectorioPacientes() {
                 <span className="pacientes__info">
                   <span className="pacientes__name">{p.nombre}</span>
                   <span className="settings__muted">
-                    {[p.motivo, `${p.citas_count} sesión${p.citas_count === 1 ? '' : 'es'}`]
+                    {[p.motivo, `${p.citas_count} ${p.citas_count === 1 ? 'sesión' : 'sesiones'}`]
                       .filter(Boolean)
                       .join(' · ')}
                   </span>
