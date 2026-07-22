@@ -252,7 +252,13 @@ function ModalityToggle({ value, onChange }) {
   );
 }
 
+// Valor especial del <select> de pacientes para "no elegí uno del directorio,
+// voy a escribir el nombre a mano" (flujo original, sin cambios).
+const NUEVO_NOMBRE = '__nuevo__';
+
 function NewCitaModal({ onClose, onCreated }) {
+  const [pacientes, setPacientes] = useState([]);
+  const [pacienteId, setPacienteId] = useState(NUEVO_NOMBRE);
   const [nombre, setNombre] = useState('');
   const [tipo, setTipo] = useState(SESSION_TYPES[0]);
   const [fecha, setFecha] = useState(toISODate(new Date()));
@@ -263,7 +269,14 @@ function NewCitaModal({ onClose, onCreated }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
-  const canSave = nombre.trim().length > 0 && fecha && hora && !saving;
+  // Directorio para elegir paciente existente; si falla, no rompe el modal —
+  // simplemente el <select> queda solo con la opción de escribir a mano.
+  useEffect(() => {
+    api.getPacientes().then(setPacientes).catch(() => {});
+  }, []);
+
+  const usingDirectorio = pacienteId !== NUEVO_NOMBRE;
+  const canSave = (usingDirectorio || nombre.trim().length > 0) && fecha && hora && !saving;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -272,7 +285,7 @@ function NewCitaModal({ onClose, onCreated }) {
     setError(null);
     try {
       const created = await api.createCita({
-        paciente_nombre: nombre.trim(),
+        ...(usingDirectorio ? { paciente_id: pacienteId } : { paciente_nombre: nombre.trim() }),
         tipo_sesion: tipo,
         fecha,
         hora,
@@ -297,15 +310,33 @@ function NewCitaModal({ onClose, onCreated }) {
 
         <form onSubmit={handleSubmit}>
           <div className="modal__field">
-            <label className="settings__label">Nombre del paciente</label>
-            <input
+            <label className="settings__label">Paciente</label>
+            <select
               className="settings__input"
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              placeholder="p. ej. María López"
-              autoFocus
-            />
+              value={pacienteId}
+              onChange={(e) => setPacienteId(e.target.value)}
+            >
+              <option value={NUEVO_NOMBRE}>Escribir nombre nuevo…</option>
+              {pacientes.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nombre}
+                </option>
+              ))}
+            </select>
           </div>
+
+          {!usingDirectorio && (
+            <div className="modal__field">
+              <label className="settings__label">Nombre del paciente</label>
+              <input
+                className="settings__input"
+                value={nombre}
+                onChange={(e) => setNombre(e.target.value)}
+                placeholder="p. ej. María López"
+                autoFocus
+              />
+            </div>
+          )}
 
           <div className="modal__field">
             <label className="settings__label">Tipo de sesión</label>

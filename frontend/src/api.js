@@ -238,3 +238,24 @@ export function updateCita(id, changes) {
 export function deleteCita(id) {
   return request('DELETE', `/api/agenda/${encodeURIComponent(id)}`);
 }
+
+// ---------------------------------------------------------------------------
+// Directorio de pacientes. Mismo esquema de sesión/RLS. Los pacientes se
+// archivan (activo:false) en vez de borrarse.
+// ---------------------------------------------------------------------------
+
+/** Lista pacientes activos. `q` (opcional) filtra por nombre o motivo en el servidor. */
+export function getPacientes(q) {
+  const qs = q && q.trim() ? `?q=${encodeURIComponent(q.trim())}` : '';
+  return request('GET', `/api/pacientes${qs}`);
+}
+
+/** Crea un paciente. `payload`: nombre, edad, telefono, motivo, notas (todos menos nombre son opcionales). */
+export function createPaciente(payload) {
+  return request('POST', '/api/pacientes', payload);
+}
+
+/** Actualiza datos de un paciente, o lo archiva con `{ activo: false }`. */
+export function updatePaciente(id, changes) {
+  return request('PATCH', `/api/pacientes/${encodeURIComponent(id)}`, changes);
+}

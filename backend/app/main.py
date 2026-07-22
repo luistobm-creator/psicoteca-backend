@@ -29,7 +29,18 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.database import init_db
-from app.routers import account, agenda, billing, glosario, items, playlists, search, stats, tree
+from app.routers import (
+    account,
+    agenda,
+    billing,
+    glosario,
+    items,
+    pacientes,
+    playlists,
+    search,
+    stats,
+    tree,
+)
 from app.scheduler import (
     scheduler_status,
     shutdown_scheduler,
@@ -87,6 +98,7 @@ app.include_router(playlists.router)
 app.include_router(account.router)
 app.include_router(glosario.router)
 app.include_router(agenda.router)
+app.include_router(pacientes.router)
 
 
 # --- Endpoints utilitarios --------------------------------------------------

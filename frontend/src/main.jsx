@@ -12,6 +12,7 @@ import Privacidad from './pages/Privacidad.jsx';
 import Perfil from './pages/Perfil.jsx';
 import GlosarioClinico from './pages/GlosarioClinico.jsx';
 import AgendaDeCitas from './pages/AgendaDeCitas.jsx';
+import DirectorioPacientes from './pages/DirectorioPacientes.jsx';
 import ComingSoon from './pages/ComingSoon.jsx';
 import { COMING_SOON_ROUTES } from './lib/profileMenu.js';
 import { AuthProvider } from './context/AuthContext.jsx';
@@ -37,6 +38,7 @@ createRoot(document.getElementById('root')).render(
             <Route path="/app/perfil" element={<Perfil />} />
             <Route path="/app/glosario" element={<GlosarioClinico />} />
             <Route path="/app/agenda" element={<AgendaDeCitas />} />
+            <Route path="/app/pacientes" element={<DirectorioPacientes />} />
             {/* Herramientas del menú que todavía no están construidas: solo UI. */}
             {COMING_SOON_ROUTES.map((r) => (
               <Route key={r.path} path={r.path} element={<ComingSoon title={r.title} />} />

@@ -3910,3 +3910,51 @@ a {
   accent-color: var(--accent);
   cursor: pointer;
 }
+
+/* ============================================================
+   Directorio de pacientes (/app/pacientes)
+   ============================================================ */
+.pacientes__list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pacientes__row {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 13px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.12s;
+}
+.pacientes__row:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-2);
+}
+.pacientes__avatar {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  color: var(--accent-contrast);
+  font-weight: 700;
+  font-size: 15px;
+}
+.pacientes__info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.pacientes__name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}

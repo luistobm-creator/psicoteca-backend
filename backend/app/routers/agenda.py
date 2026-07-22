@@ -27,7 +27,11 @@ _SELECT = "id,paciente_nombre,tipo_sesion,fecha,hora,duracion_minutos,modalidad,
 
 
 class CitaCreate(BaseModel):
-    paciente_nombre: str = Field(min_length=1, max_length=200)
+    # Uno de los dos, ver create_cita(): paciente_id (del Directorio, el
+    # backend toma el nombre actual) o paciente_nombre (texto libre, flujo
+    # original sin cambios).
+    paciente_nombre: Optional[str] = Field(default=None, max_length=200)
+    paciente_id: Optional[str] = None
     fecha: date
     hora: time
     tipo_sesion: Optional[str] = Field(default=None, max_length=80)
@@ -78,9 +82,26 @@ def create_cita(
     user: dict = Depends(require_user),
     token: str = Depends(bearer_token),
 ) -> dict:
-    nombre = payload.paciente_nombre.strip()
-    if not nombre:
-        raise HTTPException(status_code=422, detail="El nombre del paciente no puede estar vacío.")
+    if payload.paciente_id:
+        # Paciente del Directorio: se toma su nombre ACTUAL como foto para
+        # paciente_nombre (RLS ya limita la búsqueda a los pacientes del
+        # propio usuario; si no existe o no es suyo, esto da 404, no otro user).
+        resp = _postgrest(
+            "GET",
+            "/pacientes",
+            token,
+            params={"id": f"eq.{payload.paciente_id}", "select": "nombre"},
+        )
+        rows = resp.json()
+        if not rows:
+            raise HTTPException(status_code=404, detail="Ese paciente no existe.")
+        nombre = rows[0]["nombre"]
+    else:
+        nombre = (payload.paciente_nombre or "").strip()
+        if not nombre:
+            raise HTTPException(
+                status_code=422, detail="El nombre del paciente no puede estar vacío."
+            )
 
     body = payload.model_dump(mode="json")
     body["paciente_nombre"] = nombre
