@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, Crown, Settings, LogOut, Sparkles } from './icons.jsx';
+import { ChevronDown, Crown, Settings, LogOut, Sparkles, LayoutGrid } from './icons.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { startProCheckout, openBillingPortal } from '../lib/stripe.js';
 import PlanSelector from './PlanSelector.jsx';
@@ -194,6 +194,18 @@ export default function UserMenu() {
 
           <div className="usermenu__sep" />
 
+          <button
+            type="button"
+            className="usermenu__item"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              navigate('/app/perfil');
+            }}
+          >
+            <LayoutGrid width={16} height={16} />
+            Menú completo
+          </button>
           <button
             type="button"
             className="usermenu__item"

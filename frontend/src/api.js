@@ -189,3 +189,24 @@ export function removeFromPlaylist(playlistId, itemId) {
 export function deleteAccount() {
   return request('DELETE', '/api/account');
 }
+
+// ---------------------------------------------------------------------------
+// Glosario clínico (términos personales). Requiere sesión: el backend reenvía
+// el JWT a Supabase y las políticas RLS garantizan que cada usuario solo ve/
+// toca los suyos.
+// ---------------------------------------------------------------------------
+
+/** Lista los términos del glosario del usuario (orden alfabético). */
+export function getGlosario() {
+  return request('GET', '/api/glosario');
+}
+
+/** Crea un término. `categoria` es opcional. */
+export function createGlosarioTermino({ termino, definicion, categoria }) {
+  return request('POST', '/api/glosario', { termino, definicion, categoria });
+}
+
+/** Elimina un término (solo si es del usuario autenticado). */
+export function deleteGlosarioTermino(id) {
+  return request('DELETE', `/api/glosario/${encodeURIComponent(id)}`);
+}

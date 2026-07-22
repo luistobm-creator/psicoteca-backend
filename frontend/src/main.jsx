@@ -9,6 +9,10 @@ import Register from './pages/Register.jsx';
 import Settings from './pages/Settings.jsx';
 import Terminos from './pages/Terminos.jsx';
 import Privacidad from './pages/Privacidad.jsx';
+import Perfil from './pages/Perfil.jsx';
+import GlosarioClinico from './pages/GlosarioClinico.jsx';
+import ComingSoon from './pages/ComingSoon.jsx';
+import { COMING_SOON_ROUTES } from './lib/profileMenu.js';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { FavoritesProvider } from './context/FavoritesContext.jsx';
 import './styles.css';
@@ -28,6 +32,13 @@ createRoot(document.getElementById('root')).render(
             {/* Páginas legales (contenido estático, mismo marco que la landing). */}
             <Route path="/terminos" element={<Terminos />} />
             <Route path="/privacidad" element={<Privacidad />} />
+            {/* Menú de Perfil (Estudio/Progreso/Consultorio/Comunidad/Biblioteca/Cuenta). */}
+            <Route path="/app/perfil" element={<Perfil />} />
+            <Route path="/app/glosario" element={<GlosarioClinico />} />
+            {/* Herramientas del menú que todavía no están construidas: solo UI. */}
+            {COMING_SOON_ROUTES.map((r) => (
+              <Route key={r.path} path={r.path} element={<ComingSoon title={r.title} />} />
+            ))}
             {/* Cualquier ruta desconocida vuelve a la landing. */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
