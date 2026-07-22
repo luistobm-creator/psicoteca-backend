@@ -19,6 +19,7 @@ python-dotenv==1.2.2                 # Lectura de variables de entorno
 # --- API REST (Fase 2) ---
 fastapi==0.139.0                     # Framework de la API
 uvicorn[standard]==0.51.0            # Servidor ASGI (lee el puerto de $PORT)
+python-multipart==0.0.32             # Requerido por FastAPI para parsear multipart/form-data (Form/UploadFile: subida de audio en Notas de voz)
 
 # --- Automatización (Fase 4) ---
 apscheduler==3.11.3                  # Sincronización programada en segundo plano
