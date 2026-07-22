@@ -220,9 +220,13 @@ export default function App() {
     };
   }, []);
 
-  // Resumen del ecosistema clínico/de estudio (Dashboard): pacientes activos,
-  // tareas pendientes y términos del glosario. Promise.allSettled: si una sola
-  // llamada falla, las otras dos igual se muestran (no todo o nada).
+  // Resumen del ecosistema clínico/de estudio (Dashboard): arreglos completos
+  // (no solo conteos) de pacientes/tareas/glosario/examenes, para que el
+  // Dashboard derive tendencias, sparklines y el feed de actividad reciente
+  // a partir de sus `created_at` reales. Promise.allSettled: si una sola
+  // llamada falla (p. ej. tareas_terapeuticas con problemas de caché en
+  // Supabase), las demás igual se muestran — cada fuente cae a null por su
+  // cuenta, sin romper el resto del panel.
   useEffect(() => {
     if (!isAuthenticated) {
       setEcosystem(null);
@@ -231,20 +235,21 @@ export default function App() {
     }
     let cancelled = false;
     setEcosystemLoading(true);
-    Promise.allSettled([api.getPacientes(), api.getTareas(), api.getGlosario()]).then(
-      ([pacientesR, tareasR, glosarioR]) => {
-        if (cancelled) return;
-        setEcosystem({
-          pacientes: pacientesR.status === 'fulfilled' ? pacientesR.value.length : null,
-          tareasPendientes:
-            tareasR.status === 'fulfilled'
-              ? tareasR.value.filter((t) => t.estado === 'pendiente').length
-              : null,
-          glosarioTerminos: glosarioR.status === 'fulfilled' ? glosarioR.value.length : null,
-        });
-        setEcosystemLoading(false);
-      }
-    );
+    Promise.allSettled([
+      api.getPacientes(),
+      api.getTareas(),
+      api.getGlosario(),
+      api.getExamenes(),
+    ]).then(([pacientesR, tareasR, glosarioR, examenesR]) => {
+      if (cancelled) return;
+      setEcosystem({
+        pacientes: pacientesR.status === 'fulfilled' ? pacientesR.value : null,
+        tareas: tareasR.status === 'fulfilled' ? tareasR.value : null,
+        glosario: glosarioR.status === 'fulfilled' ? glosarioR.value : null,
+        examenes: examenesR.status === 'fulfilled' ? examenesR.value : null,
+      });
+      setEcosystemLoading(false);
+    });
     return () => {
       cancelled = true;
     };

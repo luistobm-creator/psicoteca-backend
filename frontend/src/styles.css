@@ -1422,19 +1422,22 @@ a {
   background: var(--surface);
   box-shadow: var(--shadow-sm);
 }
+.stat__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
 .stat__icon {
+  flex: none;
   display: grid;
   place-items: center;
   width: 42px;
   height: 42px;
   border-radius: 11px;
-  background: var(--surface-2);
-  color: var(--text-muted);
-  margin-bottom: 14px;
-}
-.stat--accent .stat__icon {
-  background: var(--accent-weak);
-  color: var(--accent);
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  color: var(--accent-contrast);
 }
 .stat__value {
   font-size: 28px;
@@ -1447,13 +1450,35 @@ a {
   font-size: 13px;
   color: var(--text-muted);
 }
-/* Gancho de marketing para usuarios Free bajo el contador de Documentos. */
+/* Tendencia real ("+N esta semana"), calculada de created_at — solo se
+   muestra cuando hay al menos un alta en los últimos 7 días. */
+.stat__trend {
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+}
+/* Gancho de marketing para usuarios Free bajo el contador de Documentos
+   (o, en Pro, la fecha de última sincronización). */
 .stat__hint {
   margin-top: 8px;
   font-size: 11.5px;
   font-weight: 600;
   line-height: 1.35;
   color: var(--accent);
+}
+
+/* Sparkline (mini-gráfico de barras, SVG hecho a mano): altas reales por
+   día, últimos 7 días. La barra de hoy se resalta en acento. */
+.sparkline {
+  flex: none;
+  overflow: visible;
+}
+.sparkline__bar {
+  fill: var(--border-strong);
+}
+.sparkline__bar--now {
+  fill: var(--accent);
 }
 
 .dash-section__head {
@@ -1567,16 +1592,16 @@ a {
 /* ---------- Módulos clínicos y de estudio (Dashboard) ---------- */
 .modules {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-  gap: 13px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
 }
 .module {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 12px;
-  padding: 18px;
-  min-height: 118px;
+  gap: 14px;
+  padding: 22px;
+  min-height: 140px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
@@ -1593,11 +1618,11 @@ a {
 .module__icon {
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: var(--accent-weak);
-  color: var(--accent);
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  color: var(--accent-contrast);
   transition: transform 0.15s;
 }
 .module:hover .module__icon {
@@ -1626,6 +1651,62 @@ a {
 .module:hover .module__arrow {
   opacity: 1;
   transform: translateX(0);
+}
+
+/* ---------- Actividad reciente (Dashboard) ---------- */
+.activity {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.activity__row {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 11px 8px;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  transition: background 0.12s;
+}
+.activity__row:hover {
+  background: var(--surface-2);
+}
+.activity__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--accent-weak);
+  color: var(--accent);
+}
+.activity__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.activity__label {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.activity__sublabel {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.activity__time {
+  flex: none;
+  font-size: 12px;
+  color: var(--text-soft);
+  white-space: nowrap;
+}
+.activity__empty {
+  padding: 4px 0;
 }
 
 /* ---------- Accesos rápidos ---------- */
