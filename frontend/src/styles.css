@@ -4071,3 +4071,111 @@ a {
   font-weight: 600;
   color: var(--text);
 }
+
+/* ============================================================
+   Modo examen (/app/modo-examen)
+   ============================================================ */
+.examen__card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: 22px;
+  margin-bottom: 14px;
+}
+.examen__progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+.examen__timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text);
+}
+.examen__prompt {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.examen__termino {
+  font-size: 21px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 18px;
+  line-height: 1.3;
+}
+.examen__opciones {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.examen__opcion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  text-align: left;
+  padding: 13px 15px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.12s;
+}
+.examen__opcion:hover {
+  border-color: var(--accent);
+}
+.examen__opcion.is-selected {
+  border-color: var(--accent);
+  background: var(--accent-weak);
+}
+.examen__opcion--static {
+  cursor: default;
+}
+.examen__opcion--static:hover {
+  border-color: var(--border-strong);
+}
+.examen__opcion.is-correct {
+  border-color: #2f9e44;
+  background: rgba(47, 158, 68, 0.12);
+  color: #2f9e44;
+}
+.examen__opcion.is-wrong {
+  border-color: var(--danger);
+  background: var(--danger-weak);
+  color: var(--danger);
+}
+
+.examen__score {
+  text-align: center;
+  padding: 20px 0 8px;
+}
+.examen__scorenum {
+  font-size: 44px;
+  font-weight: 800;
+  color: var(--accent);
+  line-height: 1;
+}
+.examen__scorelabel {
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+.examen__revision {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.examen__revisioncard {
+  margin-bottom: 0;
+}

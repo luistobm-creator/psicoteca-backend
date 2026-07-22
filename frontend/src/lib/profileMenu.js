@@ -75,6 +75,7 @@ const BUILT_ROUTES = new Set([
   '/app/pacientes',
   '/app/notas-voz',
   '/app/tareas',
+  '/app/modo-examen',
 ]);
 
 // Rutas nuevas (no existentes aún) que deben caer en la página "Próximamente".

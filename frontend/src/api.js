@@ -362,3 +362,24 @@ export function createTarea(payload) {
 export function updateTarea(id, changes) {
   return request('PATCH', `/api/tareas/${encodeURIComponent(id)}`, changes);
 }
+
+// ---------------------------------------------------------------------------
+// Modo examen. Las preguntas se generan en el propio cliente a partir de
+// getGlosario() (sin endpoint nuevo de lectura del glosario); esta capa solo
+// guarda y lista el HISTORIAL de resultados ya calificados.
+// ---------------------------------------------------------------------------
+
+/** Historial de exámenes del usuario (más reciente primero). */
+export function getExamenes() {
+  return request('GET', '/api/examenes');
+}
+
+/** Guarda el resultado de un examen recién terminado (ya calificado en el cliente). */
+export function createExamen(payload) {
+  return request('POST', '/api/examenes', payload);
+}
+
+/** Borra un resultado del historial. */
+export function deleteExamen(id) {
+  return request('DELETE', `/api/examenes/${encodeURIComponent(id)}`);
+}
