@@ -90,6 +90,12 @@ export default function App() {
   const [treeError, setTreeError] = useState(null);
   const [stats, setStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(true);
+  // Resumen del "ecosistema" clínico/de estudio para el Dashboard (pacientes
+  // activos, tareas pendientes, términos del glosario). A diferencia de
+  // tree/stats, requiere sesión — sin ella se deja en null (las tiles
+  // muestran "—", igual que ya hace fmt() con cualquier valor null).
+  const [ecosystem, setEcosystem] = useState(null);
+  const [ecosystemLoading, setEcosystemLoading] = useState(true);
   const { byId, parentOf } = useMemo(() => indexTree(tree), [tree]);
 
   // --- Navegación / selección ---
@@ -213,6 +219,36 @@ export default function App() {
       cancelled = true;
     };
   }, []);
+
+  // Resumen del ecosistema clínico/de estudio (Dashboard): pacientes activos,
+  // tareas pendientes y términos del glosario. Promise.allSettled: si una sola
+  // llamada falla, las otras dos igual se muestran (no todo o nada).
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setEcosystem(null);
+      setEcosystemLoading(false);
+      return undefined;
+    }
+    let cancelled = false;
+    setEcosystemLoading(true);
+    Promise.allSettled([api.getPacientes(), api.getTareas(), api.getGlosario()]).then(
+      ([pacientesR, tareasR, glosarioR]) => {
+        if (cancelled) return;
+        setEcosystem({
+          pacientes: pacientesR.status === 'fulfilled' ? pacientesR.value.length : null,
+          tareasPendientes:
+            tareasR.status === 'fulfilled'
+              ? tareasR.value.filter((t) => t.estado === 'pendiente').length
+              : null,
+          glosarioTerminos: glosarioR.status === 'fulfilled' ? glosarioR.value.length : null,
+        });
+        setEcosystemLoading(false);
+      }
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated]);
 
   // Cargar contenido cuando cambia la carpeta, la página o el orden.
   useEffect(() => {
@@ -418,7 +454,7 @@ export default function App() {
           </span>
           <span className="topbar__brandtext">
             <span className="topbar__title">Psicoteca</span>
-            <span className="topbar__subtitle">Espacio de estudio clínico</span>
+            <span className="topbar__subtitle">Sistema clínico y de estudio</span>
           </span>
         </button>
 
@@ -501,6 +537,8 @@ export default function App() {
                 topFolders={topFolders}
                 recents={recents}
                 plan={plan}
+                ecosystem={ecosystem}
+                ecosystemLoading={ecosystemLoading}
                 onOpenFolder={handleOpenFolder}
                 onOpenFile={handleOpenFile}
               />

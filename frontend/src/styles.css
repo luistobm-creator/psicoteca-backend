@@ -1564,6 +1564,70 @@ a {
   transform: translateX(0);
 }
 
+/* ---------- Módulos clínicos y de estudio (Dashboard) ---------- */
+.modules {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 13px;
+}
+.module {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px;
+  min-height: 118px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.08s;
+}
+.module:hover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+.module__icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--accent-weak);
+  color: var(--accent);
+  transition: transform 0.15s;
+}
+.module:hover .module__icon {
+  transform: scale(1.06) rotate(-2deg);
+}
+.module__name {
+  font-size: 14.5px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.module__desc {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+.module__arrow {
+  margin-left: auto;
+  color: var(--accent);
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.15s, transform 0.15s;
+}
+.module:hover .module__arrow {
+  opacity: 1;
+  transform: translateX(0);
+}
+
 /* ---------- Accesos rápidos ---------- */
 .dash-section + .dash-section {
   margin-top: 30px;

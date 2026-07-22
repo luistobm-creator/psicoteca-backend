@@ -1,7 +1,9 @@
-import { Files, Folder, Clock, ArrowRight, LayoutGrid } from './icons.jsx';
+import { Link } from 'react-router-dom';
+import { Files, Users, ClipboardList, Brain, Stethoscope, ArrowRight, LayoutGrid } from './icons.jsx';
 import { formatDate } from '../lib/fileType.js';
 import { categoryIcon } from '../lib/categoryIcons.jsx';
 import { Skeleton, SkeletonCollections } from './Skeleton.jsx';
+import { PROFILE_MENU } from '../lib/profileMenu.js';
 import QuickAccess from './QuickAccess.jsx';
 import ProBadge from './ProBadge.jsx';
 
@@ -18,6 +20,23 @@ function StatTile({ icon, value, label, tone, loading, hint }) {
   );
 }
 
+// Módulos clínicos y de estudio destacados en el Dashboard. El icono y el
+// label salen de PROFILE_MENU (la misma fuente que ya usa Perfil.jsx) para
+// no duplicar los paths SVG — solo se agrega aquí una descripción corta.
+const FEATURED_MODULES = [
+  { to: '/app/pacientes', desc: 'Historial y expedientes' },
+  { to: '/app/notas-voz', desc: 'Documenta cada sesión' },
+  { to: '/app/agenda', desc: 'Tu semana de citas' },
+  { to: '/app/tareas', desc: 'Ejercicios entre sesiones' },
+  { to: '/app/modo-examen', desc: 'Ponte a prueba' },
+  { to: '/app/tarjetas-repaso', desc: 'Repaso rápido y activo' },
+];
+const ALL_MENU_ROWS = PROFILE_MENU.flatMap((section) => section.rows);
+const modules = FEATURED_MODULES.map(({ to, desc }) => {
+  const row = ALL_MENU_ROWS.find((r) => r.to === to);
+  return row ? { to, desc, label: row.label, iconPath: row.iconPath } : null;
+}).filter(Boolean);
+
 export default function Dashboard({
   stats,
   statsLoading = false,
@@ -25,51 +44,87 @@ export default function Dashboard({
   topFolders = [],
   recents = [],
   plan = 'free',
+  ecosystem = null,
+  ecosystemLoading = false,
   onOpenFolder,
   onOpenFile,
 }) {
   const fmt = (n) => (n == null ? '—' : Number(n).toLocaleString('es'));
-  // Si el backend aún no devolvió la fecha, informamos que sigue en curso en
-  // lugar de un guion mudo.
-  const lastSync = stats?.last_sync ? formatDate(stats.last_sync) : 'Sincronizando…';
+  const isPro = plan === 'pro';
+  // Free: el gancho de upgrade ya existente. Pro: no hace falta venderle
+  // nada, así que ahí se aprovecha el mismo hint para la fecha de sync.
+  const documentosHint = !isPro
+    ? '(Desbloquea la biblioteca completa con Pro)'
+    : stats?.last_sync
+      ? `Sincronizado ${formatDate(stats.last_sync)}`
+      : null;
 
   return (
     <div className="dashboard">
       <section className="hero fade-in">
         <span className="hero__eyebrow">Psicoteca</span>
-        <h1 className="hero__title">Tu espacio de estudio clínico</h1>
+        <h1 className="hero__title">Tu sistema integral de psicología clínica y estudio</h1>
         <p className="hero__subtitle">
-          Explora, busca y lee tu biblioteca de psicología sin salir de la
-          aplicación. Selecciona una categoría para empezar.
+          Consultorio, agenda y estudio clínico en un solo lugar, con tu
+          biblioteca de referencia siempre a la mano.
         </p>
       </section>
 
       <div className="stats fade-in">
         <StatTile
+          icon={<Users width={20} height={20} />}
+          value={fmt(ecosystem?.pacientes)}
+          label="Pacientes activos"
+          tone="accent"
+          loading={ecosystemLoading}
+        />
+        <StatTile
+          icon={<ClipboardList width={20} height={20} />}
+          value={fmt(ecosystem?.tareasPendientes)}
+          label="Tareas pendientes"
+          loading={ecosystemLoading}
+        />
+        <StatTile
+          icon={<Brain width={20} height={20} />}
+          value={fmt(ecosystem?.glosarioTerminos)}
+          label="Términos en el Glosario"
+          loading={ecosystemLoading}
+        />
+        <StatTile
           icon={<Files width={20} height={20} />}
           value={fmt(stats?.total_files)}
           label="Documentos"
-          tone="accent"
           loading={statsLoading}
-          hint={
-            plan !== 'pro'
-              ? '(Desbloquea la biblioteca completa con Pro)'
-              : null
-          }
-        />
-        <StatTile
-          icon={<Folder width={20} height={20} />}
-          value={fmt(stats?.total_folders)}
-          label="Carpetas"
-          loading={statsLoading}
-        />
-        <StatTile
-          icon={<Clock width={20} height={20} />}
-          value={lastSync}
-          label="Última sincronización"
-          loading={statsLoading}
+          hint={documentosHint}
         />
       </div>
+
+      <section className="dash-section fade-in">
+        <header className="dash-section__head">
+          <h2 className="dash-section__title">
+            <Stethoscope width={17} height={17} />
+            Tu consultorio y estudio
+          </h2>
+          <span className="muted">{modules.length} herramientas</span>
+        </header>
+
+        <div className="modules">
+          {modules.map((m) => (
+            <Link key={m.to} to={m.to} className="module">
+              <span className="module__icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                  <path d={m.iconPath} />
+                </svg>
+              </span>
+              <span className="module__name">{m.label}</span>
+              <span className="module__desc">
+                {m.desc}
+                <ArrowRight className="module__arrow" width={15} height={15} />
+              </span>
+            </Link>
+          ))}
+        </div>
+      </section>
 
       <QuickAccess
         recents={recents}
