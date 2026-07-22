@@ -35,6 +35,7 @@ from app.routers import (
     billing,
     glosario,
     items,
+    notas_voz,
     pacientes,
     playlists,
     search,
@@ -99,6 +100,7 @@ app.include_router(account.router)
 app.include_router(glosario.router)
 app.include_router(agenda.router)
 app.include_router(pacientes.router)
+app.include_router(notas_voz.router)
 
 
 # --- Endpoints utilitarios --------------------------------------------------

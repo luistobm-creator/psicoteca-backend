@@ -428,6 +428,24 @@ export function Trash(props) {
   );
 }
 
+export function Mic(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
+      <path d="M19 10v1a7 7 0 0 1-14 0v-1" />
+      <path d="M12 18v4" />
+    </svg>
+  );
+}
+
+export function Square(props) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="4" y="4" width="16" height="16" rx="2" />
+    </svg>
+  );
+}
+
 export function Bell(props) {
   return (
     <svg {...base} {...props}>

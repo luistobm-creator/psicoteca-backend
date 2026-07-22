@@ -259,3 +259,84 @@ export function createPaciente(payload) {
 export function updatePaciente(id, changes) {
   return request('PATCH', `/api/pacientes/${encodeURIComponent(id)}`, changes);
 }
+
+// ---------------------------------------------------------------------------
+// Notas de voz. El audio vive en Supabase Storage (bucket privado); esta capa
+// nunca ve ni expone un link directo — solo sube el blob y, para reproducir,
+// pide el proxy autenticado del backend (igual que los PDFs de Drive).
+// ---------------------------------------------------------------------------
+
+/** Lista las notas de voz (metadatos) de un paciente. */
+export function getNotasVoz(pacienteId) {
+  return request('GET', `/api/notas-voz?paciente_id=${encodeURIComponent(pacienteId)}`);
+}
+
+/**
+ * Sube una nota de voz nueva. `blob`: el audio grabado (Blob de MediaRecorder).
+ * `meta`: { paciente_id, cita_id?, titulo?, duracion_segundos? }.
+ * Es multipart/form-data, así que NO pasa por `request()` (que siempre manda JSON).
+ */
+export async function uploadNotaVoz(blob, meta) {
+  // La extensión sigue el mimeType real del blob (varía por navegador: Chrome
+  // suele grabar audio/webm, Safari audio/mp4) para que el backend guarde el
+  // archivo con la extensión correcta en Storage.
+  const subtype = (blob.type || 'audio/webm').split(';')[0].split('/')[1] || 'webm';
+  const form = new FormData();
+  form.append('audio', blob, `nota.${subtype}`);
+  form.append('paciente_id', meta.paciente_id);
+  if (meta.cita_id) form.append('cita_id', meta.cita_id);
+  if (meta.titulo) form.append('titulo', meta.titulo);
+  if (meta.duracion_segundos != null) form.append('duracion_segundos', String(meta.duracion_segundos));
+
+  const res = await fetch(`${API_BASE}/api/notas-voz`, {
+    method: 'POST',
+    headers: await authHeaders(), // sin Content-Type: el navegador pone el boundary correcto
+    body: form,
+  });
+  if (!res.ok) {
+    let detail = `HTTP ${res.status}`;
+    try {
+      const body = await res.json();
+      if (body && body.detail) detail = body.detail;
+    } catch {
+      /* respuesta sin cuerpo JSON */
+    }
+    const err = new Error(detail);
+    err.status = res.status;
+    throw err;
+  }
+  return res.json();
+}
+
+/** Elimina una nota de voz (audio + metadatos) definitivamente. */
+export function deleteNotaVoz(id) {
+  return request('DELETE', `/api/notas-voz/${encodeURIComponent(id)}`);
+}
+
+/**
+ * Descarga el audio de una nota como blob y devuelve un object URL listo para
+ * un <audio src=…>. Un <audio> nativo no puede mandar el header
+ * Authorization, así que no se le puede dar la URL del backend directo (como
+ * sí se hace con PDF.js, que sí soporta headers propios) — se pide con
+ * fetch() autenticado, igual que `fetchContent()` para archivos no-PDF.
+ * El llamador debe revocar la URL con URL.revokeObjectURL cuando ya no se use.
+ */
+export async function fetchNotaVozAudio(id) {
+  const res = await fetch(`${API_BASE}/api/notas-voz/${encodeURIComponent(id)}/audio`, {
+    headers: await authHeaders(),
+  });
+  if (!res.ok) {
+    let detail = `HTTP ${res.status}`;
+    try {
+      const body = await res.json();
+      if (body && body.detail) detail = body.detail;
+    } catch {
+      /* respuesta sin cuerpo JSON */
+    }
+    const err = new Error(detail);
+    err.status = res.status;
+    throw err;
+  }
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
+}
