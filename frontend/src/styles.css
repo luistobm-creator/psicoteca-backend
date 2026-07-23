@@ -3924,6 +3924,17 @@ a {
   margin-bottom: 14px;
 }
 
+/* ---------- Cita APA (dentro del lector) ---------- */
+.apa-preview {
+  padding: 12px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
 /* ============================================================
    Agenda de citas (/app/agenda)
    ============================================================ */
