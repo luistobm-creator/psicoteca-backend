@@ -3,11 +3,31 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Library, MessageCircle, X } from '../components/icons.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useComunidadPerfil } from '../lib/useComunidadPerfil.js';
+import { useCountUp } from '../lib/useCountUp.js';
 import PerfilComunidadForm from '../components/PerfilComunidadForm.jsx';
 import PersonaRow from '../components/PersonaRow.jsx';
 import ChatThread from '../components/ChatThread.jsx';
 import { timeAgo } from '../lib/fileType.js';
 import * as api from '../api.js';
+
+const CARD =
+  'group relative overflow-hidden rounded-2xl border border-border bg-surface shadow-sm ' +
+  'transition-all duration-300 hover:-translate-y-1 hover:border-accent/30 hover:shadow-lift dark:hover:shadow-lift-dark';
+
+function MiniStat({ icon, value, label }) {
+  const animated = useCountUp(typeof value === 'number' ? value : 0);
+  return (
+    <div className={CARD + ' flex items-center gap-3 p-4'}>
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-gradient text-white shadow-sm">
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <div className="text-2xl font-black leading-none tabular-nums text-ink">{animated}</div>
+        <div className="mt-1 text-xs font-medium text-ink-muted">{label}</div>
+      </div>
+    </div>
+  );
+}
 
 export default function Mensajes() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
@@ -58,6 +78,10 @@ export default function Mensajes() {
 
   const idsConversados = useMemo(() => new Set(conversaciones.map((c) => c.otroId)), [conversaciones]);
   const directorioNuevo = directorio.filter((p) => !idsConversados.has(p.user_id));
+  const totalNoLeidos = useMemo(
+    () => conversaciones.reduce((sum, c) => sum + c.noLeidos, 0),
+    [conversaciones]
+  );
 
   const [hiloConId, setHiloConId] = useState(null);
   const [hilo, setHilo] = useState([]);
@@ -128,41 +152,62 @@ export default function Mensajes() {
             {!loading && !error && (
               <>
                 {conversaciones.length > 0 && (
-                  <div className="inbox__list" style={{ marginBottom: 20 }}>
-                    {conversaciones.map((c) => {
-                      const p = perfilPorId[c.otroId];
-                      const nombre = p?.nombre_publico || 'Perfil no disponible';
-                      const iniciales = nombre
-                        .trim()
-                        .split(/\s+/)
-                        .slice(0, 2)
-                        .map((s) => s[0])
-                        .join('')
-                        .toUpperCase();
-                      return (
-                        <button
-                          key={c.otroId}
-                          type="button"
-                          className={'inbox__row' + (hiloConId === c.otroId ? ' is-active' : '')}
-                          onClick={() => abrirHilo(c.otroId)}
-                        >
-                          <div className="persona__avatar">{iniciales}</div>
-                          <span className="persona__nombre" style={{ flex: '0 0 auto', maxWidth: 140 }}>
-                            {nombre}
-                          </span>
-                          <span className="inbox__preview">{c.ultimo.contenido}</span>
-                          <span className="settings__muted" style={{ fontSize: 11, flex: '0 0 auto' }}>
-                            {timeAgo(new Date(c.ultimo.created_at))}
-                          </span>
-                          {c.noLeidos > 0 && <span className="inbox__unread" title={`${c.noLeidos} sin leer`} />}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <MiniStat
+                        icon={<MessageCircle width={18} height={18} />}
+                        value={conversaciones.length}
+                        label="Conversaciones"
+                      />
+                      <MiniStat icon={<X width={18} height={18} />} value={totalNoLeidos} label="Sin leer" />
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      {conversaciones.map((c) => {
+                        const p = perfilPorId[c.otroId];
+                        const nombre = p?.nombre_publico || 'Perfil no disponible';
+                        const iniciales = nombre
+                          .trim()
+                          .split(/\s+/)
+                          .slice(0, 2)
+                          .map((s) => s[0])
+                          .join('')
+                          .toUpperCase();
+                        return (
+                          <button
+                            key={c.otroId}
+                            type="button"
+                            onClick={() => abrirHilo(c.otroId)}
+                            className={
+                              'flex w-full items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition-all duration-200 ' +
+                              (hiloConId === c.otroId
+                                ? 'border-accent bg-accent-weak'
+                                : 'border-border bg-surface hover:-translate-y-0.5 hover:border-accent/30 hover:shadow-sm')
+                            }
+                          >
+                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-gradient text-sm font-bold text-white">
+                              {iniciales}
+                            </span>
+                            <span className="w-[140px] shrink-0 truncate text-sm font-semibold text-ink">{nombre}</span>
+                            <span className="min-w-0 flex-1 truncate text-xs text-ink-muted">{c.ultimo.contenido}</span>
+                            <span className="shrink-0 text-[11px] text-ink-soft">
+                              {timeAgo(new Date(c.ultimo.created_at))}
+                            </span>
+                            {c.noLeidos > 0 && (
+                              <span
+                                className="h-2 w-2 shrink-0 rounded-full bg-accent"
+                                title={`${c.noLeidos} sin leer`}
+                              />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
                 )}
 
-                <h2 className="dash-section__title" style={{ marginBottom: 12 }}>
-                  <MessageCircle width={17} height={17} />
+                <h2 className="flex items-center gap-2 text-lg font-bold text-ink">
+                  <MessageCircle width={17} height={17} className="text-accent" />
                   Directorio
                 </h2>
                 {directorioNuevo.length === 0 && conversaciones.length === 0 && (
@@ -171,14 +216,18 @@ export default function Mensajes() {
                     aparecerá aquí.
                   </p>
                 )}
-                <div className="inbox__list">
+                <div className="flex flex-col gap-3">
                   {directorioNuevo.map((p) => (
                     <PersonaRow
                       key={p.user_id}
                       nombre={p.nombre_publico}
                       especialidad={p.especialidad}
                       right={
-                        <button type="button" className="settings__btn settings__btn--accent" onClick={() => abrirHilo(p.user_id)}>
+                        <button
+                          type="button"
+                          onClick={() => abrirHilo(p.user_id)}
+                          className="shrink-0 rounded-lg bg-accent-gradient px-3.5 py-1.5 text-xs font-bold text-white shadow-sm transition-transform duration-150 hover:-translate-y-0.5"
+                        >
                           Mensaje
                         </button>
                       }

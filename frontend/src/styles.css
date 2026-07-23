@@ -4518,47 +4518,6 @@ a {
   cursor: default;
 }
 
-/* -- Inbox de mensajes directos (lista de conversaciones) -- */
-.inbox__list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.inbox__row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  text-align: left;
-  padding: 11px 13px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  cursor: pointer;
-  transition: border-color 0.15s, background 0.12s;
-}
-.inbox__row:hover,
-.inbox__row.is-active {
-  border-color: var(--accent);
-  background: var(--accent-weak);
-}
-.inbox__preview {
-  flex: 1 1 auto;
-  min-width: 0;
-  font-size: 12.5px;
-  color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.inbox__unread {
-  flex: 0 0 auto;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--accent);
-}
-
 /* ============================================================
    Micro-interacciones compartidas: elevación al pasar el mouse en
    tarjetas de contenido de varias pantallas. Una sola regla en vez de
