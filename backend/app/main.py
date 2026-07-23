@@ -34,6 +34,7 @@ from app.routers import (
     actividad_biblioteca,
     agenda,
     billing,
+    comunidad_grupos,
     comunidad_perfiles,
     consentimientos,
     consultorio_config,
@@ -121,6 +122,7 @@ app.include_router(actividad_biblioteca.router)
 app.include_router(sugerencias.router)
 app.include_router(notificaciones.router)
 app.include_router(comunidad_perfiles.router)
+app.include_router(comunidad_grupos.router)
 
 
 # --- Endpoints utilitarios --------------------------------------------------
