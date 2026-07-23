@@ -80,6 +80,7 @@ const BUILT_ROUTES = new Set([
   '/app/facturacion-consulta',
   '/app/consultorio/estadisticas',
   '/app/consultorio/configurar',
+  '/app/plantillas',
 ]);
 
 // Rutas nuevas (no existentes aún) que deben caer en la página "Próximamente".

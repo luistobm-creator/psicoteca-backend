@@ -418,3 +418,27 @@ export function getConsultorioConfig() {
 export function saveConsultorioConfig(payload) {
   return request('PUT', '/api/consultorio-config', payload);
 }
+
+// ---------------------------------------------------------------------------
+// Plantillas de formato. Mismo esquema de sesión/RLS que el Glosario.
+// ---------------------------------------------------------------------------
+
+/** Lista las plantillas del usuario (orden alfabético). */
+export function getPlantillas() {
+  return request('GET', '/api/plantillas');
+}
+
+/** Crea una plantilla. */
+export function createPlantilla(payload) {
+  return request('POST', '/api/plantillas', payload);
+}
+
+/** Actualiza (edita) una plantilla. */
+export function updatePlantilla(id, changes) {
+  return request('PATCH', `/api/plantillas/${encodeURIComponent(id)}`, changes);
+}
+
+/** Elimina una plantilla. */
+export function deletePlantilla(id) {
+  return request('DELETE', `/api/plantillas/${encodeURIComponent(id)}`);
+}
