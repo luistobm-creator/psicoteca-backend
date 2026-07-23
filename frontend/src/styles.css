@@ -4377,43 +4377,6 @@ a {
   text-overflow: ellipsis;
 }
 
-/* -- Ranking -- */
-.ranking__list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.ranking__row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 12px 14px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-}
-.ranking__row.is-me {
-  border-color: var(--accent);
-  background: var(--accent-weak);
-}
-.ranking__pos {
-  flex: 0 0 auto;
-  width: 28px;
-  text-align: center;
-  font-size: 14px;
-  font-weight: 800;
-  color: var(--text-muted);
-}
-.ranking__row:nth-child(1) .ranking__pos {
-  color: var(--pro-strong);
-}
-.ranking__puntos {
-  flex: 0 0 auto;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--accent);
-}
 
 /* -- Chat (compartido por Grupos y Mensajes) -- */
 .chat {
