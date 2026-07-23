@@ -383,3 +383,24 @@ export function createExamen(payload) {
 export function deleteExamen(id) {
   return request('DELETE', `/api/examenes/${encodeURIComponent(id)}`);
 }
+
+// ---------------------------------------------------------------------------
+// Facturación y pagos. Mismo esquema de sesión/RLS. Un cobro no se borra: se
+// anula (PATCH estado='anulado'), igual criterio que tareas/pacientes/citas.
+// ---------------------------------------------------------------------------
+
+/** Lista los cobros del usuario (más reciente primero). `pacienteId` opcional. */
+export function getFacturacion(pacienteId) {
+  const qs = pacienteId ? `?paciente_id=${encodeURIComponent(pacienteId)}` : '';
+  return request('GET', `/api/facturacion${qs}`);
+}
+
+/** Registra un cobro. `payload`: paciente_id, monto, fecha, concepto (opcional). */
+export function createFacturacion(payload) {
+  return request('POST', '/api/facturacion', payload);
+}
+
+/** Actualiza un cobro: corregir campos, marcar pagado o anular (estado). */
+export function updateFacturacion(id, changes) {
+  return request('PATCH', `/api/facturacion/${encodeURIComponent(id)}`, changes);
+}

@@ -34,6 +34,7 @@ from app.routers import (
     agenda,
     billing,
     examenes,
+    facturacion,
     glosario,
     items,
     notas_voz,
@@ -105,6 +106,7 @@ app.include_router(pacientes.router)
 app.include_router(notas_voz.router)
 app.include_router(tareas.router)
 app.include_router(examenes.router)
+app.include_router(facturacion.router)
 
 
 # --- Endpoints utilitarios --------------------------------------------------

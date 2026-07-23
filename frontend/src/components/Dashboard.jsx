@@ -80,6 +80,7 @@ const FEATURED_MODULES = [
   { to: '/app/tareas', desc: 'Ejercicios entre sesiones' },
   { to: '/app/modo-examen', desc: 'Ponte a prueba' },
   { to: '/app/tarjetas-repaso', desc: 'Repaso rápido y activo' },
+  { to: '/app/facturacion-consulta', desc: 'Cobros y deudores' },
 ];
 const ALL_MENU_ROWS = PROFILE_MENU.flatMap((section) => section.rows);
 const modules = FEATURED_MODULES.map(({ to, desc }) => {
