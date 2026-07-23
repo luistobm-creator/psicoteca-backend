@@ -111,6 +111,9 @@ export default function GruposEstudio() {
           )}
         </header>
 
+        {!perfilLoading && !perfil && (
+          <p className="settings__error">No se pudo cargar tu perfil de comunidad. Intenta de nuevo más tarde.</p>
+        )}
         {!perfilLoading && perfil && !perfil.activo && <PerfilComunidadForm perfil={perfil} onSaved={refreshPerfil} />}
 
         {loading && <p className="settings__muted">Cargando…</p>}

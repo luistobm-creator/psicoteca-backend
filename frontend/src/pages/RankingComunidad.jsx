@@ -71,6 +71,9 @@ export default function RankingComunidad() {
         </header>
 
         {perfilLoading && <p className="settings__muted">Cargando…</p>}
+        {!perfilLoading && !perfil && (
+          <p className="settings__error">No se pudo cargar tu perfil de comunidad. Intenta de nuevo más tarde.</p>
+        )}
         {!perfilLoading && perfil && <PerfilComunidadForm perfil={perfil} onSaved={handleSaved} />}
 
         <p className="settings__muted" style={{ marginBottom: 14 }}>
