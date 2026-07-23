@@ -1232,11 +1232,13 @@ a {
   background: var(--surface);
   color: var(--text);
   box-shadow: var(--shadow-sm);
-  transition: border-color 0.15s, background 0.12s;
+  transition: border-color 0.15s, background 0.12s, transform 0.15s, box-shadow 0.15s;
 }
 .result:hover {
-  border-color: var(--border-strong);
+  border-color: var(--accent-soft);
   background: var(--surface-2);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
 }
 .result.is-active {
   border-color: var(--accent);
@@ -1531,6 +1533,12 @@ a {
   border-radius: var(--radius);
   background: var(--surface);
   box-shadow: var(--shadow-sm);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.stat:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--accent-soft);
 }
 .stat__top {
   display: flex;
@@ -1548,12 +1556,18 @@ a {
   border-radius: 11px;
   background: linear-gradient(135deg, var(--accent), var(--accent-hover));
   color: var(--accent-contrast);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.25s ease;
+}
+.stat:hover .stat__icon {
+  transform: scale(1.08) rotate(-3deg);
 }
 .stat__value {
-  font-size: 28px;
-  font-weight: 800;
+  font-size: 32px;
+  font-weight: 900;
   letter-spacing: -0.02em;
   line-height: 1.1;
+  font-variant-numeric: tabular-nums;
 }
 .stat__label {
   margin-top: 4px;
@@ -2399,7 +2413,7 @@ a {
 }
 .settings__panel {
   width: 100%;
-  max-width: 620px;
+  max-width: 760px;
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -2424,8 +2438,9 @@ a {
   width: 32px;
   height: 32px;
   border-radius: 9px;
-  background: var(--accent-weak);
-  color: var(--accent);
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  color: #fff;
+  box-shadow: var(--shadow-sm);
 }
 .settings__back {
   display: inline-flex;
@@ -2435,19 +2450,21 @@ a {
   color: var(--text-muted);
   padding: 6px 10px;
   border-radius: 8px;
-  transition: color 0.14s, background 0.14s;
+  transition: color 0.14s, background 0.14s, transform 0.14s;
 }
 .settings__back:hover {
-  color: var(--text);
+  color: var(--accent);
   background: var(--surface-2);
+  transform: translateX(-1px);
 }
 .settings__head {
   margin: 4px 2px 2px;
 }
 .settings__title {
-  font-size: 24px;
-  font-weight: 800;
+  font-size: 28px;
+  font-weight: 900;
   letter-spacing: -0.02em;
+  color: var(--text);
 }
 .settings__subtitle {
   margin-top: 4px;
@@ -2462,6 +2479,12 @@ a {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.25s, border-color 0.25s, transform 0.25s;
+}
+.settings__card:hover {
+  border-color: var(--accent-soft);
+  box-shadow: var(--shadow);
 }
 .settings__card--danger {
   border-color: var(--danger-border);
@@ -2518,10 +2541,15 @@ a {
   font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
-  transition: filter 0.14s, background 0.14s, border-color 0.14s;
+  transition: filter 0.14s, background 0.14s, border-color 0.14s, transform 0.14s, box-shadow 0.14s;
 }
 .settings__btn:hover:not(:disabled) {
   border-color: var(--text-soft);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+.settings__btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
 }
 .settings__btn:disabled {
   opacity: 0.55;
@@ -2531,6 +2559,10 @@ a {
   background: linear-gradient(150deg, var(--accent), var(--accent-hover));
   color: var(--accent-contrast);
   border: none;
+  box-shadow: 0 2px 10px -2px var(--accent-soft);
+}
+.settings__btn--accent:hover:not(:disabled) {
+  box-shadow: 0 6px 18px -4px var(--accent-soft);
 }
 .settings__btn--danger {
   background: var(--danger);
@@ -3743,6 +3775,7 @@ a {
   color: var(--accent-contrast);
   font-weight: 700;
   font-size: 20px;
+  box-shadow: var(--shadow);
 }
 .profile-menu__id {
   flex: 1;
@@ -3758,18 +3791,6 @@ a {
   color: var(--text-muted);
   overflow-wrap: anywhere;
 }
-.profile-menu__edit {
-  flex: none;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--accent);
-  background: var(--surface-2);
-  border-radius: var(--radius-sm);
-  padding: 7px 13px;
-}
-.profile-menu__edit:hover {
-  background: var(--accent-weak);
-}
 
 .profile-menu__plan {
   display: block;
@@ -3777,6 +3798,11 @@ a {
   padding: 16px 18px;
   background: var(--pro-weak);
   border: 1px solid var(--pro-border);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.profile-menu__plan:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
 }
 .profile-menu__plan-head {
   display: flex;
@@ -3815,6 +3841,7 @@ a {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
+  box-shadow: var(--shadow-sm);
 }
 .profile-menu__row {
   display: flex;
@@ -3823,18 +3850,35 @@ a {
   padding: 13px 15px;
   color: var(--text);
   border-bottom: 1px solid var(--border);
-  transition: background 0.12s;
+  transition: background 0.15s, padding-left 0.15s;
 }
 .profile-menu__card .profile-menu__row:last-child {
   border-bottom: none;
 }
 .profile-menu__row:hover {
   background: var(--surface-2);
+  padding-left: 19px;
+}
+.profile-menu__row:hover .profile-menu__rowicon {
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  color: #fff;
 }
 .profile-menu__row--standalone {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+.profile-menu__rowicon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--accent-weak);
+  color: var(--accent);
+  transition: background 0.15s, color 0.15s;
 }
 .profile-menu__rowlabel {
   flex: 1;
@@ -3842,7 +3886,10 @@ a {
   font-size: 14.5px;
   font-weight: 500;
 }
-.profile-menu__row svg:last-child {
+/* Combinador directo (>), no descendiente: si no, también pisaría el color
+   del ícono dentro de .profile-menu__rowicon (también es un svg "último
+   hijo", pero de OTRO padre). Solo debe afectar la flecha final de la fila. */
+.profile-menu__row > svg:last-child {
   flex: none;
   color: var(--text-soft);
 }
@@ -5184,4 +5231,33 @@ a {
   height: 9px;
   border-radius: 50%;
   background: var(--accent);
+}
+
+/* ============================================================
+   Micro-interacciones compartidas: elevación al pasar el mouse en
+   tarjetas de contenido de varias pantallas. Una sola regla en vez de
+   repetir la misma transición en cada clase — así toda tarjeta "de lista"
+   del sitio gana el mismo lenguaje táctil sin tocar el JSX de cada página.
+   (.logro__card queda fuera a propósito: su opacidad ya comunica
+   bloqueado/desbloqueado, un hover con elevación ahí sugeriría una acción
+   que no existe.)
+   ============================================================ */
+.glosario__card,
+.notasvoz__item,
+.sugerencia__item,
+.faq__item,
+.grupo__card,
+.persona__row,
+.comunidad__perfilcard {
+  transition: box-shadow 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
+}
+.glosario__card:hover,
+.notasvoz__item:hover,
+.sugerencia__item:hover,
+.faq__item:hover,
+.grupo__card:hover,
+.persona__row:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+  border-color: var(--accent-soft);
 }

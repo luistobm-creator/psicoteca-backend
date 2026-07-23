@@ -48,9 +48,6 @@ export default function Perfil() {
             <div className="profile-menu__name">{user.name}</div>
             <div className="profile-menu__email">{user.email}</div>
           </div>
-          <Link to="/app/editar-perfil" className="profile-menu__edit">
-            Editar
-          </Link>
         </div>
 
         <Link to="/configuracion" className={'profile-menu__plan profile-menu__plan--' + (isPro ? 'pro' : 'free')}>
@@ -63,8 +60,10 @@ export default function Perfil() {
           </div>
         </Link>
 
-        <Link to="/app/perfil-publico" className="profile-menu__row profile-menu__row--standalone">
-          <Library width={18} height={18} />
+        <Link to="/app/ranking" className="profile-menu__row profile-menu__row--standalone">
+          <span className="profile-menu__rowicon">
+            <Library width={17} height={17} />
+          </span>
           <span className="profile-menu__rowlabel">Ver perfil público</span>
           <ChevronRight width={16} height={16} />
         </Link>
@@ -75,9 +74,11 @@ export default function Perfil() {
             <div className="profile-menu__card">
               {section.rows.map((row) => (
                 <Link key={row.to + row.label} to={row.to} className="profile-menu__row">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                    <path d={row.iconPath} />
-                  </svg>
+                  <span className="profile-menu__rowicon">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                      <path d={row.iconPath} />
+                    </svg>
+                  </span>
                   <span className="profile-menu__rowlabel">{row.label}</span>
                   <ChevronRight width={16} height={16} />
                 </Link>
