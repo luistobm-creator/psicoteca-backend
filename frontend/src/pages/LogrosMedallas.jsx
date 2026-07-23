@@ -15,7 +15,29 @@ import {
   Users,
 } from '../components/icons.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useCountUp } from '../lib/useCountUp.js';
 import * as api from '../api.js';
+
+const CARD =
+  'group relative overflow-hidden rounded-2xl border border-border bg-surface shadow-sm ' +
+  'transition-all duration-300 hover:-translate-y-1 hover:border-accent/30 hover:shadow-lift dark:hover:shadow-lift-dark';
+
+function MiniStat({ icon, value, display, label }) {
+  const animated = useCountUp(typeof value === 'number' ? value : 0);
+  return (
+    <div className={CARD + ' flex items-center gap-3 p-4'}>
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-gradient text-white shadow-sm">
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <div className="text-2xl font-black leading-none tabular-nums text-ink">
+          {display != null ? display : animated}
+        </div>
+        <div className="mt-1 text-xs font-medium text-ink-muted">{label}</div>
+      </div>
+    </div>
+  );
+}
 
 // Cada logro se calcula de datos reales ya existentes (pacientes, tareas,
 // glosario, examenes, lectura) -- sin tabla nueva, sin nada inventado. Los de
@@ -129,7 +151,7 @@ export default function LogrosMedallas() {
         </header>
 
         {!loading && data?.errores && (
-          <p className="settings__muted" style={{ marginBottom: 16 }}>
+          <p className="settings__muted">
             Algunos logros no se pudieron calcular del todo{data.lecturaError ? ` (${data.lecturaError})` : ''}, pero
             el resto sigue funcionando.
           </p>
@@ -138,33 +160,70 @@ export default function LogrosMedallas() {
         {loading && <p className="settings__muted">Cargando…</p>}
 
         {!loading && metrics && (
-          <div className="glosario__grid">
-            {logrosConProgreso.map((l) => {
-              const Icon = l.icon;
-              return (
-                <article key={l.id} className={'logro__card' + (l.unlocked ? ' is-unlocked' : '')}>
-                  <div className="logro__icon">{l.unlocked ? <Icon width={22} height={22} /> : <Lock width={18} height={18} />}</div>
-                  <h3 className="logro__label">{l.label}</h3>
-                  <p className="logro__desc">{l.desc}</p>
-                  {l.goal > 1 && (
-                    <div className="logro__progress">
-                      <div className="logro__progressbar">
-                        <div className="logro__progressfill" style={{ width: `${(l.current / l.goal) * 100}%` }} />
-                      </div>
-                      <span className="logro__progresslabel">
-                        {l.current}/{l.goal}
-                      </span>
-                    </div>
-                  )}
-                  {l.goal === 1 && (
-                    <span className={'logro__badge' + (l.unlocked ? ' is-unlocked' : '')}>
-                      {l.unlocked ? '¡Desbloqueado!' : 'Pendiente'}
+          <>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <MiniStat icon={<Crown width={18} height={18} />} value={desbloqueados} label="Desbloqueados" />
+              <MiniStat
+                icon={<Lock width={18} height={18} />}
+                value={LOGROS.length - desbloqueados}
+                label="Por desbloquear"
+              />
+              <MiniStat
+                icon={<Sparkles width={18} height={18} />}
+                display={`${Math.round((desbloqueados / LOGROS.length) * 100)}%`}
+                label="Progreso total"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {logrosConProgreso.map((l) => {
+                const Icon = l.icon;
+                return (
+                  <article
+                    key={l.id}
+                    className={
+                      'flex flex-col gap-1.5 rounded-2xl border border-border bg-surface p-4 shadow-sm transition-opacity duration-300 ' +
+                      (l.unlocked ? 'opacity-100' : 'opacity-60')
+                    }
+                  >
+                    <span
+                      className={
+                        'flex h-11 w-11 items-center justify-center rounded-xl shadow-sm ' +
+                        (l.unlocked ? 'bg-accent-gradient text-white' : 'bg-surface-3 text-ink-soft')
+                      }
+                    >
+                      {l.unlocked ? <Icon width={20} height={20} /> : <Lock width={18} height={18} />}
                     </span>
-                  )}
-                </article>
-              );
-            })}
-          </div>
+                    <h3 className="mt-1 text-sm font-bold text-ink">{l.label}</h3>
+                    <p className="flex-1 text-xs leading-relaxed text-ink-muted">{l.desc}</p>
+                    {l.goal > 1 && (
+                      <div className="mt-1 flex items-center gap-2">
+                        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-3">
+                          <div
+                            className="h-full rounded-full bg-accent-gradient transition-all duration-300"
+                            style={{ width: `${(l.current / l.goal) * 100}%` }}
+                          />
+                        </div>
+                        <span className="text-[11px] font-bold text-ink-muted">
+                          {l.current}/{l.goal}
+                        </span>
+                      </div>
+                    )}
+                    {l.goal === 1 && (
+                      <span
+                        className={
+                          'mt-1 w-fit rounded-full px-2.5 py-1 text-[11px] font-bold ' +
+                          (l.unlocked ? 'bg-accent-weak text-accent' : 'bg-surface-3 text-ink-soft')
+                        }
+                      >
+                        {l.unlocked ? '¡Desbloqueado!' : 'Pendiente'}
+                      </span>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
     </div>
