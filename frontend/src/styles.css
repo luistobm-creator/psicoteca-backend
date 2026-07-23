@@ -4489,3 +4489,67 @@ a {
   flex-direction: column;
   gap: 8px;
 }
+
+/* ============================================================
+   Buzón de sugerencias (/app/sugerencias)
+   ============================================================ */
+.sugerencia__compose {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+.sugerencia__list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sugerencia__item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+.sugerencia__itemhead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sugerencia__itemhead .settings__muted {
+  flex: 1 1 auto;
+  font-size: 12px;
+}
+.sugerencia__msg {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.sugerencia__chip {
+  flex: 0 0 auto;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+.sugerencia__chip--idea {
+  background: var(--serene-weak);
+  color: var(--serene);
+}
+.sugerencia__chip--error {
+  background: var(--danger-weak);
+  color: var(--danger);
+}
+.sugerencia__chip--otro {
+  background: var(--surface-3);
+  color: var(--text-muted);
+}

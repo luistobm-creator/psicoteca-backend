@@ -472,3 +472,17 @@ export function logActividad(file, accion) {
     /* mejor esfuerzo: no bloquea la lectura/descarga real */
   });
 }
+
+// ---------------------------------------------------------------------------
+// Buzón de sugerencias: bandeja de salida propia (enviar/listar/retractar).
+// ---------------------------------------------------------------------------
+
+export function getSugerencias() {
+  return request('GET', '/api/sugerencias');
+}
+export function createSugerencia(payload) {
+  return request('POST', '/api/sugerencias', payload);
+}
+export function deleteSugerencia(id) {
+  return request('DELETE', `/api/sugerencias/${encodeURIComponent(id)}`);
+}

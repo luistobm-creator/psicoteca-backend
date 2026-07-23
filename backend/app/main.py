@@ -45,6 +45,7 @@ from app.routers import (
     playlists,
     search,
     stats,
+    sugerencias,
     tareas,
     tree,
 )

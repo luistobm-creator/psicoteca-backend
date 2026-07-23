@@ -83,6 +83,7 @@ const BUILT_ROUTES = new Set([
   '/app/plantillas',
   '/app/historial',
   '/app/descargas',
+  '/app/sugerencias',
 ]);
 
 // Rutas nuevas (no existentes aún) que deben caer en la página "Próximamente".
