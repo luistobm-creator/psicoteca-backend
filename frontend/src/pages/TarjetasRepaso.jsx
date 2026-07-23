@@ -147,7 +147,7 @@ export default function TarjetasRepaso() {
 
         {!terminosLoading && !terminosError && terminos.length > 0 && (
           <>
-            <div className="modal__field" style={{ maxWidth: 380 }}>
+            <div className="flex max-w-[380px] flex-col gap-1.5">
               <label className="settings__label">Categoría</label>
               <select className="settings__input" value={categoriaSel} onChange={(e) => setCategoriaSel(e.target.value)}>
                 <option value={TODAS}>Todas ({terminos.length} términos)</option>
@@ -165,12 +165,15 @@ export default function TarjetasRepaso() {
 
             {pool.length > 0 && actual && (
               <>
-                <div className="flashcard__progress">
+                <div className="flex flex-col gap-2 text-sm text-ink-muted">
                   <span>
                     {knownCount} de {totalSesion} dominadas · quedan {queue.length}
                   </span>
-                  <div className="flashcard__progressbar">
-                    <div className="flashcard__progressfill" style={{ width: `${progresoPct}%` }} />
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
+                    <div
+                      className="h-full rounded-full bg-accent-gradient transition-all duration-300"
+                      style={{ width: `${progresoPct}%` }}
+                    />
                   </div>
                 </div>
 
@@ -188,32 +191,42 @@ export default function TarjetasRepaso() {
                 </div>
 
                 {!flipped ? (
-                  <p className="settings__muted flashcard__keyhint">Toca la tarjeta (o Espacio) para ver la definición.</p>
+                  <p className="text-center text-xs text-ink-soft">Toca la tarjeta (o Espacio) para ver la definición.</p>
                 ) : (
-                  <div className="flashcard__actions">
-                    <button type="button" className="settings__btn" onClick={marcarRepasar}>
+                  <div className="flex justify-center gap-3">
+                    <button
+                      type="button"
+                      onClick={marcarRepasar}
+                      className="rounded-xl border border-border px-5 py-2.5 text-sm font-semibold text-ink-muted transition-colors duration-150 hover:border-accent/40 hover:text-accent"
+                    >
                       Repasar de nuevo
                     </button>
-                    <button type="button" className="settings__btn settings__btn--accent" onClick={marcarLoSe}>
+                    <button
+                      type="button"
+                      onClick={marcarLoSe}
+                      className="rounded-xl bg-accent-gradient px-5 py-2.5 text-sm font-bold text-white shadow-[0_2px_10px_-2px_var(--accent-soft)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_18px_-4px_var(--accent-soft)] active:translate-y-0"
+                    >
                       Lo sé
                     </button>
                   </div>
                 )}
-                {flipped && <p className="settings__muted flashcard__keyhint">Atajos: 1/← repasar · 2/→/Enter lo sé</p>}
+                {flipped && (
+                  <p className="text-center text-xs text-ink-soft">Atajos: 1/← repasar · 2/→/Enter lo sé</p>
+                )}
               </>
             )}
 
             {pool.length > 0 && !actual && (
-              <div className="flashcard__complete">
-                <p className="settings__title" style={{ fontSize: 20 }}>
-                  ¡Repaso completo!
-                </p>
-                <p className="settings__muted">Dominaste las {totalSesion} tarjetas de esta sesión.</p>
-                <div className="flashcard__actions" style={{ justifyContent: 'center' }}>
-                  <button type="button" className="settings__btn settings__btn--accent" onClick={iniciarSesion}>
-                    Repasar de nuevo
-                  </button>
-                </div>
+              <div className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-surface px-6 py-10 text-center shadow-sm">
+                <p className="text-xl font-black text-ink">¡Repaso completo!</p>
+                <p className="text-sm text-ink-muted">Dominaste las {totalSesion} tarjetas de esta sesión.</p>
+                <button
+                  type="button"
+                  onClick={iniciarSesion}
+                  className="mt-2 rounded-xl bg-accent-gradient px-5 py-2.5 text-sm font-bold text-white shadow-[0_2px_10px_-2px_var(--accent-soft)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_18px_-4px_var(--accent-soft)] active:translate-y-0"
+                >
+                  Repasar de nuevo
+                </button>
               </div>
             )}
           </>
