@@ -29,6 +29,7 @@ import LogrosMedallas from './pages/LogrosMedallas.jsx';
 import AyudaSoporte from './pages/AyudaSoporte.jsx';
 import RankingComunidad from './pages/RankingComunidad.jsx';
 import GruposEstudio from './pages/GruposEstudio.jsx';
+import Mensajes from './pages/Mensajes.jsx';
 import ComingSoon from './pages/ComingSoon.jsx';
 // Recharts (~400 KB) solo se necesita en estas páginas — se carga aparte, no
 // en el bundle principal, mismo criterio que PdfViewer.jsx con pdfjs-dist.
@@ -76,6 +77,7 @@ createRoot(document.getElementById('root')).render(
             <Route path="/app/ayuda" element={<AyudaSoporte />} />
             <Route path="/app/ranking" element={<RankingComunidad />} />
             <Route path="/app/grupos" element={<GruposEstudio />} />
+            <Route path="/app/mensajes" element={<Mensajes />} />
             <Route
               path="/app/consultorio/estadisticas"
               element={

@@ -92,6 +92,7 @@ const BUILT_ROUTES = new Set([
   '/app/ayuda',
   '/app/ranking',
   '/app/grupos',
+  '/app/mensajes',
 ]);
 
 // Rutas nuevas (no existentes aún) que deben caer en la página "Próximamente".

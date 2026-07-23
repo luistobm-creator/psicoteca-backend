@@ -35,6 +35,7 @@ from app.routers import (
     agenda,
     billing,
     comunidad_grupos,
+    comunidad_mensajes,
     comunidad_perfiles,
     consentimientos,
     consultorio_config,
@@ -123,6 +124,7 @@ app.include_router(sugerencias.router)
 app.include_router(notificaciones.router)
 app.include_router(comunidad_perfiles.router)
 app.include_router(comunidad_grupos.router)
+app.include_router(comunidad_mensajes.router)
 
 
 # --- Endpoints utilitarios --------------------------------------------------
