@@ -114,6 +114,7 @@ app.include_router(facturacion.router)
 app.include_router(consultorio_config.router)
 app.include_router(plantillas.router)
 app.include_router(actividad_biblioteca.router)
+app.include_router(sugerencias.router)
 
 
 # --- Endpoints utilitarios --------------------------------------------------
