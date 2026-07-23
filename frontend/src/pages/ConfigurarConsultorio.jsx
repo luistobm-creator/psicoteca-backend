@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Library } from '../components/icons.jsx';
+import { ArrowLeft, Check, Library } from '../components/icons.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import * as api from '../api.js';
 
@@ -91,7 +91,10 @@ export default function ConfigurarConsultorio() {
         {loading && <p className="settings__muted">Cargando…</p>}
 
         {!loading && (
-          <form onSubmit={handleSubmit} style={{ maxWidth: 480 }}>
+          <form
+            onSubmit={handleSubmit}
+            className="flex max-w-[480px] flex-col gap-4 rounded-2xl border border-border bg-surface p-6 shadow-sm"
+          >
             <div className="modal__field">
               <label className="settings__label">Nombre del consultorio</label>
               <input
@@ -149,11 +152,21 @@ export default function ConfigurarConsultorio() {
 
             {error && <div className="modal__error">{error}</div>}
 
-            <div className="modal__actions" style={{ justifyContent: 'flex-start' }}>
-              <button type="submit" className="settings__btn settings__btn--accent" disabled={saving}>
-                {saving ? 'Guardando…' : saved ? '✓ Guardado' : 'Guardar cambios'}
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={saving}
+              className="w-full rounded-xl bg-accent-gradient px-4 py-3 text-sm font-bold text-white shadow-[0_2px_10px_-2px_var(--accent-soft)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_18px_-4px_var(--accent-soft)] active:translate-y-0 disabled:opacity-60 disabled:hover:translate-y-0"
+            >
+              {saving ? (
+                'Guardando…'
+              ) : saved ? (
+                <span className="inline-flex items-center justify-center gap-1.5">
+                  <Check width={14} height={14} /> Guardado
+                </span>
+              ) : (
+                'Guardar cambios'
+              )}
+            </button>
           </form>
         )}
       </div>
