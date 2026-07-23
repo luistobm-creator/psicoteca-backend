@@ -1,18 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  RadialBarChart,
-  RadialBar,
-} from 'recharts';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { ArrowLeft, Library } from '../components/icons.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import Gauge from '../components/Gauge.jsx';
 import * as api from '../api.js';
 
 const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
@@ -200,30 +191,6 @@ export default function EstadisticasConsultorio() {
             </section>
           </>
         )}
-      </div>
-    </div>
-  );
-}
-
-function Gauge({ label, value }) {
-  const pct = value ?? 0;
-  const chartData = [{ name: label, value: pct, fill: 'var(--accent)' }];
-  return (
-    <div className="gauge">
-      <ResponsiveContainer width="100%" height={140}>
-        <RadialBarChart
-          innerRadius="70%"
-          outerRadius="100%"
-          data={chartData}
-          startAngle={90}
-          endAngle={-270}
-        >
-          <RadialBar dataKey="value" background={{ fill: 'var(--surface-2)' }} cornerRadius={8} max={100} />
-        </RadialBarChart>
-      </ResponsiveContainer>
-      <div className="gauge__label">
-        <span className="gauge__value">{value == null ? '—' : `${value}%`}</span>
-        <span className="settings__muted">{label}</span>
       </div>
     </div>
   );

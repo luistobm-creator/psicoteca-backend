@@ -26,9 +26,10 @@ import Notificaciones from './pages/Notificaciones.jsx';
 import ReferirColegas from './pages/ReferirColegas.jsx';
 import ConsentimientoFirma from './pages/ConsentimientoFirma.jsx';
 import ComingSoon from './pages/ComingSoon.jsx';
-// Recharts (~400 KB) solo se necesita en esta página — se carga aparte, no en
-// el bundle principal, mismo criterio que PdfViewer.jsx con pdfjs-dist.
+// Recharts (~400 KB) solo se necesita en estas páginas — se carga aparte, no
+// en el bundle principal, mismo criterio que PdfViewer.jsx con pdfjs-dist.
 const EstadisticasConsultorio = lazy(() => import('./pages/EstadisticasConsultorio.jsx'));
+const EstadisticasEstudio = lazy(() => import('./pages/EstadisticasEstudio.jsx'));
 import { COMING_SOON_ROUTES } from './lib/profileMenu.js';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { FavoritesProvider } from './context/FavoritesContext.jsx';
@@ -72,6 +73,14 @@ createRoot(document.getElementById('root')).render(
               element={
                 <Suspense fallback={null}>
                   <EstadisticasConsultorio />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/app/estadisticas"
+              element={
+                <Suspense fallback={null}>
+                  <EstadisticasEstudio />
                 </Suspense>
               }
             />

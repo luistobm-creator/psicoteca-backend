@@ -2,56 +2,14 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Files, Users, ClipboardList, Brain, Check, Stethoscope, ArrowRight, LayoutGrid } from './icons.jsx';
 import { formatDate } from '../lib/fileType.js';
+import { dailyCounts } from '../lib/stats.js';
 import { categoryIcon } from '../lib/categoryIcons.jsx';
 import { Skeleton, SkeletonCollections } from './Skeleton.jsx';
 import { PROFILE_MENU } from '../lib/profileMenu.js';
 import QuickAccess from './QuickAccess.jsx';
 import ActivityFeed from './ActivityFeed.jsx';
 import ProBadge from './ProBadge.jsx';
-
-// Altas por día (a partir de created_at) de los últimos `days` días,
-// terminando hoy. Base real tanto del sparkline como de la tendencia
-// ("+N esta semana") — nunca son números inventados.
-function dailyCounts(rows, days = 7) {
-  const buckets = new Array(days).fill(0);
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  rows.forEach((row) => {
-    if (!row.created_at) return;
-    const d = new Date(row.created_at);
-    const dMidnight = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    const dayDiff = Math.round((today - dMidnight) / 86400000);
-    const idx = days - 1 - dayDiff;
-    if (idx >= 0 && idx < days) buckets[idx] += 1;
-  });
-  return buckets;
-}
-
-// Mini-gráfico de barras hecho a mano (sin librería nueva, mismo criterio
-// que los SVG de icons.jsx). La barra de hoy se resalta en acento.
-function Sparkline({ data }) {
-  const max = Math.max(1, ...data);
-  const w = data.length * 7 - 2;
-  return (
-    <svg className="sparkline" width={w} height={26} viewBox={`0 0 ${w} 26`} aria-hidden="true">
-      {data.map((v, i) => {
-        const h = Math.max(2, Math.round((v / max) * 22));
-        const isNow = i === data.length - 1;
-        return (
-          <rect
-            key={i}
-            x={i * 7}
-            y={26 - h}
-            width={5}
-            height={h}
-            rx={1.5}
-            className={'sparkline__bar' + (isNow ? ' sparkline__bar--now' : '')}
-          />
-        );
-      })}
-    </svg>
-  );
-}
+import Sparkline from './Sparkline.jsx';
 
 function StatTile({ icon, value, label, loading, hint, spark, trend }) {
   return (
