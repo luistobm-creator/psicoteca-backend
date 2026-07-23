@@ -34,6 +34,7 @@ from app.routers import (
     actividad_biblioteca,
     agenda,
     billing,
+    consentimientos,
     consultorio_config,
     examenes,
     facturacion,
@@ -107,6 +108,7 @@ app.include_router(playlists.router)
 app.include_router(account.router)
 app.include_router(glosario.router)
 app.include_router(agenda.router)
+app.include_router(consentimientos.router)
 app.include_router(pacientes.router)
 app.include_router(notas_voz.router)
 app.include_router(tareas.router)

@@ -497,3 +497,14 @@ export function getNotificaciones() {
 export function saveNotificaciones(payload) {
   return request('PUT', '/api/notificaciones', payload);
 }
+
+// ---------------------------------------------------------------------------
+// Consentimiento con firma: registro legal por paciente (sin editar/borrar).
+// ---------------------------------------------------------------------------
+
+export function getConsentimientos(pacienteId) {
+  return request('GET', `/api/consentimientos?paciente_id=${encodeURIComponent(pacienteId)}`);
+}
+export function createConsentimiento(payload) {
+  return request('POST', '/api/consentimientos', payload);
+}

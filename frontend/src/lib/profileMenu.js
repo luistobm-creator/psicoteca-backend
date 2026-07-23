@@ -86,6 +86,7 @@ const BUILT_ROUTES = new Set([
   '/app/sugerencias',
   '/app/notificaciones',
   '/app/referidos',
+  '/app/consentimiento',
 ]);
 
 // Rutas nuevas (no existentes aún) que deben caer en la página "Próximamente".
