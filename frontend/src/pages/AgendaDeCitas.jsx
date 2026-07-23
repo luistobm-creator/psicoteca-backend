@@ -6,6 +6,20 @@ import * as api from '../api.js';
 
 const SESSION_TYPES = ['Individual', 'Pareja', 'Familiar', 'Evaluación', 'Seguimiento'];
 
+// Marcar asistencia (para Estadísticas del consultorio: índice de
+// asistencia). Un solo chip cicla sin marcar -> asistió -> no asistió -> sin
+// marcar, en vez de dos chips separados para no saturar la fila de chips.
+function nextAsistio(cur) {
+  if (cur == null) return true;
+  if (cur === true) return false;
+  return null;
+}
+function asistioLabel(v) {
+  if (v === true) return 'Asistió';
+  if (v === false) return 'No asistió';
+  return 'Marcar asistencia';
+}
+
 function pad(n) {
   return String(n).padStart(2, '0');
 }
@@ -185,6 +199,16 @@ export default function AgendaDeCitas() {
                   >
                     <Bell width={12} height={12} />
                     {c.recordatorio ? 'Recordatorio activo' : 'Recordatorio apagado'}
+                  </button>
+                  <button
+                    type="button"
+                    className={
+                      'agenda__chip agenda__chip--btn' +
+                      (c.asistio === true ? ' is-on' : c.asistio === false ? ' agenda__chip--danger' : '')
+                    }
+                    onClick={() => patch(c.id, { asistio: nextAsistio(c.asistio) })}
+                  >
+                    {asistioLabel(c.asistio)}
                   </button>
                   <button
                     type="button"

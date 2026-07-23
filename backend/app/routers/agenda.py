@@ -23,7 +23,7 @@ from app.routers.playlists import _postgrest
 
 router = APIRouter(prefix="/api", tags=["agenda"])
 
-_SELECT = "id,paciente_nombre,tipo_sesion,fecha,hora,duracion_minutos,modalidad,recordatorio,estado,notas,created_at"
+_SELECT = "id,paciente_id,paciente_nombre,tipo_sesion,fecha,hora,duracion_minutos,modalidad,recordatorio,estado,notas,asistio,created_at"
 
 
 class CitaCreate(BaseModel):
@@ -53,6 +53,8 @@ class CitaUpdate(BaseModel):
     recordatorio: Optional[bool] = None
     estado: Optional[str] = Field(default=None, pattern="^(programada|cancelada)$")
     notas: Optional[str] = Field(default=None, max_length=2000)
+    # Para Estadísticas del consultorio (índice de asistencia). null = sin marcar.
+    asistio: Optional[bool] = None
 
 
 @router.get("/agenda", summary="Lista las citas del usuario (programadas)")

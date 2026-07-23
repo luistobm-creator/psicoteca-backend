@@ -1,0 +1,230 @@
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  RadialBarChart,
+  RadialBar,
+} from 'recharts';
+import { ArrowLeft, Library } from '../components/icons.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
+import * as api from '../api.js';
+
+const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+function formatMonto(n) {
+  return `$${Number(n).toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+}
+
+// Últimos `n` meses (más antiguo primero), como {key: 'YYYY-MM', label: 'ene 2026'}.
+function ultimosMeses(n) {
+  const out = [];
+  const now = new Date();
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    out.push({ key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`, label: `${MESES_CORTOS[d.getMonth()]}` });
+  }
+  return out;
+}
+
+// Estadísticas del consultorio: cruza pacientes + agenda + facturación para
+// ingresos mensuales, índice de asistencia y retención de pacientes. 100%
+// frontend — deriva todo de los 3 endpoints ya existentes, sin tabla ni
+// endpoint nuevo (mismo criterio que el Dashboard).
+export default function EstadisticasConsultorio() {
+  const { isAuthenticated, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) navigate('/login', { replace: true });
+  }, [authLoading, isAuthenticated, navigate]);
+
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // allSettled: cada fuente puede faltar de forma independiente (p. ej.
+  // facturacion antes de correr su script SQL) sin tirar abajo las gráficas
+  // que sí tienen datos — mismo criterio que el ecosystem del Dashboard.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    setLoading(true);
+    Promise.allSettled([api.getPacientes(), api.getAgenda(), api.getFacturacion()]).then(
+      ([pacientesR, agendaR, facturacionR]) => {
+        setData({
+          pacientes: pacientesR.status === 'fulfilled' ? pacientesR.value : null,
+          agenda: agendaR.status === 'fulfilled' ? agendaR.value : null,
+          facturacion: facturacionR.status === 'fulfilled' ? facturacionR.value : null,
+          errors: {
+            pacientes: pacientesR.status === 'rejected' ? pacientesR.reason?.message : null,
+            agenda: agendaR.status === 'rejected' ? agendaR.reason?.message : null,
+            facturacion: facturacionR.status === 'rejected' ? facturacionR.reason?.message : null,
+          },
+        });
+        setLoading(false);
+      }
+    );
+  }, [isAuthenticated]);
+
+  const tieneFacturacion = !!data?.facturacion;
+  const tieneAgenda = !!data?.agenda;
+  const tienePacientes = !!data?.pacientes;
+
+  const ingresosPorMes = useMemo(() => {
+    const meses = ultimosMeses(6);
+    if (!tieneFacturacion) return null;
+    const totales = {};
+    data.facturacion
+      .filter((c) => c.estado === 'pagado')
+      .forEach((c) => {
+        const key = c.fecha.slice(0, 7); // 'YYYY-MM'
+        totales[key] = (totales[key] || 0) + Number(c.monto);
+      });
+    return meses.map((m) => ({ ...m, monto: Math.round(totales[m.key] || 0) }));
+  }, [data, tieneFacturacion]);
+
+  const ingresosEsteMes = ingresosPorMes ? ingresosPorMes[ingresosPorMes.length - 1]?.monto ?? 0 : null;
+
+  const asistencia = useMemo(() => {
+    if (!tieneAgenda) return null;
+    const marcadas = data.agenda.filter((c) => c.asistio != null);
+    if (marcadas.length === 0) return null;
+    const asistieron = marcadas.filter((c) => c.asistio === true).length;
+    return Math.round((asistieron / marcadas.length) * 100);
+  }, [data, tieneAgenda]);
+
+  const retencion = useMemo(() => {
+    if (!tieneAgenda || !tienePacientes || data.pacientes.length === 0) return null;
+    const hace60 = new Date();
+    hace60.setDate(hace60.getDate() - 60);
+    const citasPorPaciente = new Set(
+      data.agenda
+        .filter((c) => c.paciente_id && new Date(c.fecha) >= hace60)
+        .map((c) => c.paciente_id)
+    );
+    const retenidos = data.pacientes.filter((p) => citasPorPaciente.has(p.id)).length;
+    return Math.round((retenidos / data.pacientes.length) * 100);
+  }, [data, tieneAgenda, tienePacientes]);
+
+  if (authLoading || !isAuthenticated) return null;
+
+  return (
+    <div className="settings">
+      <div className="settings__panel fade-in">
+        <div className="settings__topbar">
+          <Link to="/app" className="settings__brand" title="Ir a la biblioteca">
+            <span className="settings__logo">
+              <Library width={20} height={20} />
+            </span>
+            Psicoteca
+          </Link>
+          <Link to="/app/perfil" className="settings__back">
+            <ArrowLeft width={15} height={15} />
+            Volver al menú
+          </Link>
+        </div>
+
+        <header className="settings__head">
+          <h1 className="settings__title">Estadísticas del consultorio</h1>
+          <p className="settings__subtitle">Ingresos, asistencia y retención, cruzando tus datos reales.</p>
+        </header>
+
+        {loading && <p className="settings__muted">Cargando…</p>}
+
+        {!loading && data && (
+          <>
+            <div className="stats fade-in">
+              <div className="stat">
+                <div className="stat__value">{ingresosEsteMes == null ? '—' : formatMonto(ingresosEsteMes)}</div>
+                <div className="stat__label">Ingresos este mes</div>
+                {!tieneFacturacion && <div className="stat__hint">{data.errors.facturacion || 'No disponible'}</div>}
+              </div>
+              <div className="stat">
+                <div className="stat__value">{asistencia == null ? '—' : `${asistencia}%`}</div>
+                <div className="stat__label">Índice de asistencia</div>
+                {tieneAgenda && asistencia == null && (
+                  <div className="stat__hint">Marca asistencia en tu Agenda para calcularlo</div>
+                )}
+                {!tieneAgenda && <div className="stat__hint">{data.errors.agenda || 'No disponible'}</div>}
+              </div>
+              <div className="stat">
+                <div className="stat__value">{retencion == null ? '—' : `${retencion}%`}</div>
+                <div className="stat__label">Retención de pacientes</div>
+                {(tieneAgenda && tienePacientes) ? (
+                  <div className="stat__hint">Con cita en los últimos 60 días</div>
+                ) : (
+                  <div className="stat__hint">{data.errors.agenda || data.errors.pacientes || 'No disponible'}</div>
+                )}
+              </div>
+            </div>
+
+            <section className="dash-section fade-in">
+              <header className="dash-section__head">
+                <h2 className="dash-section__title">Ingresos mensuales</h2>
+                <span className="muted">Últimos 6 meses · solo cobros pagados</span>
+              </header>
+              {!tieneFacturacion ? (
+                <p className="settings__muted">
+                  Aún no hay datos de facturación disponibles ({data.errors.facturacion}).
+                </p>
+              ) : (
+                <div className="chart-box">
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={ingresosPorMes} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                      <XAxis dataKey="label" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
+                      <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} width={48} />
+                      <Tooltip
+                        formatter={(v) => [formatMonto(v), 'Ingresos']}
+                        contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8 }}
+                      />
+                      <Bar dataKey="monto" fill="var(--accent)" radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </section>
+
+            <section className="dash-section fade-in">
+              <header className="dash-section__head">
+                <h2 className="dash-section__title">Asistencia y retención</h2>
+              </header>
+              <div className="gauges">
+                <Gauge label="Asistencia" value={asistencia} />
+                <Gauge label="Retención" value={retencion} />
+              </div>
+            </section>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Gauge({ label, value }) {
+  const pct = value ?? 0;
+  const chartData = [{ name: label, value: pct, fill: 'var(--accent)' }];
+  return (
+    <div className="gauge">
+      <ResponsiveContainer width="100%" height={140}>
+        <RadialBarChart
+          innerRadius="70%"
+          outerRadius="100%"
+          data={chartData}
+          startAngle={90}
+          endAngle={-270}
+        >
+          <RadialBar dataKey="value" background={{ fill: 'var(--surface-2)' }} cornerRadius={8} max={100} />
+        </RadialBarChart>
+      </ResponsiveContainer>
+      <div className="gauge__label">
+        <span className="gauge__value">{value == null ? '—' : `${value}%`}</span>
+        <span className="settings__muted">{label}</span>
+      </div>
+    </div>
+  );
+}

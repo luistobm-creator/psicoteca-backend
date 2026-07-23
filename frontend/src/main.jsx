@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import '@fontsource-variable/inter';
@@ -19,6 +19,9 @@ import ModoExamen from './pages/ModoExamen.jsx';
 import TarjetasRepaso from './pages/TarjetasRepaso.jsx';
 import FacturacionPagos from './pages/FacturacionPagos.jsx';
 import ComingSoon from './pages/ComingSoon.jsx';
+// Recharts (~400 KB) solo se necesita en esta página — se carga aparte, no en
+// el bundle principal, mismo criterio que PdfViewer.jsx con pdfjs-dist.
+const EstadisticasConsultorio = lazy(() => import('./pages/EstadisticasConsultorio.jsx'));
 import { COMING_SOON_ROUTES } from './lib/profileMenu.js';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { FavoritesProvider } from './context/FavoritesContext.jsx';
@@ -49,6 +52,14 @@ createRoot(document.getElementById('root')).render(
             <Route path="/app/modo-examen" element={<ModoExamen />} />
             <Route path="/app/tarjetas-repaso" element={<TarjetasRepaso />} />
             <Route path="/app/facturacion-consulta" element={<FacturacionPagos />} />
+            <Route
+              path="/app/consultorio/estadisticas"
+              element={
+                <Suspense fallback={null}>
+                  <EstadisticasConsultorio />
+                </Suspense>
+              }
+            />
             {/* Herramientas del menú que todavía no están construidas: solo UI. */}
             {COMING_SOON_ROUTES.map((r) => (
               <Route key={r.path} path={r.path} element={<ComingSoon title={r.title} />} />
