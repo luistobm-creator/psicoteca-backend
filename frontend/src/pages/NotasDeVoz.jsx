@@ -1,8 +1,30 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Library, Mic, Square, Trash } from '../components/icons.jsx';
+import { ArrowLeft, Calendar, Clock, Library, Mic, Square, Trash } from '../components/icons.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useCountUp } from '../lib/useCountUp.js';
 import * as api from '../api.js';
+
+const CARD =
+  'group relative overflow-hidden rounded-2xl border border-border bg-surface shadow-sm ' +
+  'transition-all duration-300 hover:-translate-y-1 hover:border-accent/30 hover:shadow-lift dark:hover:shadow-lift-dark';
+
+function MiniStat({ icon, value, display, label }) {
+  const animated = useCountUp(typeof value === 'number' ? value : 0);
+  return (
+    <div className={CARD + ' flex items-center gap-3 p-4'}>
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-gradient text-white shadow-sm">
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <div className="text-2xl font-black leading-none tabular-nums text-ink">
+          {display != null ? display : animated}
+        </div>
+        <div className="mt-1 text-xs font-medium text-ink-muted">{label}</div>
+      </div>
+    </div>
+  );
+}
 
 // Tope propio (no pedido por el usuario, decisión de diseño): evita archivos
 // gigantes por accidente si alguien olvida detener la grabación.
@@ -74,6 +96,16 @@ export default function NotasDeVoz() {
     loadNotas(pacienteId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pacienteId]);
+
+  // Mini-stats del paciente seleccionado, derivadas de `notas` ya cargadas.
+  const duracionTotal = useMemo(
+    () => notas.reduce((sum, n) => sum + (n.duracion_segundos || 0), 0),
+    [notas]
+  );
+  const ultimaNotaLabel = useMemo(() => {
+    if (notas.length === 0) return '—';
+    return new Date(notas[0].created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+  }, [notas]);
 
   // --- Grabación (MediaRecorder nativo, sin librerías) ---
   const [recording, setRecording] = useState(false);
@@ -230,7 +262,7 @@ export default function NotasDeVoz() {
 
   return (
     <div className="settings">
-      <div className="settings__panel fade-in">
+      <div className="settings__panel fade-in max-w-[860px]">
         <div className="settings__topbar">
           <Link to="/app" className="settings__brand" title="Ir a la biblioteca">
             <span className="settings__logo">
@@ -262,13 +294,23 @@ export default function NotasDeVoz() {
 
         {pacientes.length > 0 && (
           <>
-            <div className="notasvoz__patientsel">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <MiniStat icon={<Mic width={18} height={18} />} value={notas.length} label="Notas guardadas" />
+              <MiniStat
+                icon={<Clock width={18} height={18} />}
+                display={formatDuration(duracionTotal)}
+                label="Duración total"
+              />
+              <MiniStat icon={<Calendar width={18} height={18} />} display={ultimaNotaLabel} label="Última nota" />
+            </div>
+
+            <div className="max-w-[380px]">
               <label className="settings__label" htmlFor="notasvoz-paciente">
                 Paciente
               </label>
               <select
                 id="notasvoz-paciente"
-                className="settings__input"
+                className="settings__input mt-1.5"
                 value={pacienteId}
                 onChange={(e) => setPacienteId(e.target.value)}
                 disabled={selectorLocked}
@@ -281,31 +323,34 @@ export default function NotasDeVoz() {
               </select>
             </div>
 
-            <div className="notasvoz__recorder">
+            <div className={CARD + ' flex flex-col items-center gap-4 p-8 text-center'}>
               {!pending ? (
-                <div className="notasvoz__recordrow">
+                <>
                   <button
                     type="button"
-                    className={`notasvoz__recbtn${recording ? ' is-recording' : ''}`}
                     onClick={recording ? stopRecording : startRecording}
                     aria-label={recording ? 'Detener grabación' : 'Grabar nota de voz'}
+                    className={
+                      'flex h-20 w-20 items-center justify-center rounded-full text-white transition-all duration-300 ' +
+                      (recording
+                        ? 'bg-danger shadow-[0_0_0_8px_rgba(229,72,77,0.15)]'
+                        : 'bg-accent-gradient shadow-lg hover:scale-105 hover:shadow-glow active:scale-95')
+                    }
                   >
-                    {recording ? <Square width={20} height={20} /> : <Mic width={24} height={24} />}
+                    {recording ? <Square width={22} height={22} /> : <Mic width={28} height={28} />}
                   </button>
-                  <div className="notasvoz__recstatus">
-                    {recording ? (
-                      <>
-                        <span className="notasvoz__recdot" />
-                        Grabando… {formatDuration(elapsed)}
-                      </>
-                    ) : (
-                      <span className="settings__muted">Grabar para {pacienteActual?.nombre}</span>
-                    )}
-                  </div>
-                </div>
+                  {recording ? (
+                    <div className="flex items-center gap-2 text-sm font-bold text-danger">
+                      <span className="h-2 w-2 animate-pulse rounded-full bg-danger" />
+                      Grabando… {formatDuration(elapsed)}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-ink-muted">Grabar para {pacienteActual?.nombre}</p>
+                  )}
+                </>
               ) : (
-                <div className="notasvoz__review">
-                  <audio controls src={pending.url} className="notasvoz__audio" />
+                <div className="flex w-full max-w-md flex-col gap-3">
+                  <audio controls src={pending.url} className="w-full" />
                   <input
                     type="text"
                     className="settings__input"
@@ -315,7 +360,7 @@ export default function NotasDeVoz() {
                     maxLength={120}
                     autoFocus
                   />
-                  <div className="modal__actions">
+                  <div className="flex justify-center gap-2">
                     <button type="button" className="settings__btn" onClick={handleDiscard} disabled={saving}>
                       Descartar
                     </button>
@@ -330,7 +375,7 @@ export default function NotasDeVoz() {
                   </div>
                 </div>
               )}
-              {recError && <p className="settings__error">{recError}</p>}
+              {recError && <p className="text-sm text-danger">{recError}</p>}
             </div>
 
             {notasLoading && <p className="settings__muted">Cargando notas…</p>}
@@ -340,40 +385,44 @@ export default function NotasDeVoz() {
             )}
 
             {!notasLoading && notas.length > 0 && (
-              <div className="notasvoz__list">
+              <div className="flex flex-col gap-3">
                 {notas.map((n) => (
-                  <div key={n.id} className="notasvoz__item">
-                    <div className="notasvoz__itemhead">
-                      <span className="notasvoz__iteminfo">
-                        <span className="notasvoz__itemtitle">{n.titulo || 'Nota de voz'}</span>
-                        <span className="settings__muted">
-                          {[formatWhen(n.created_at), n.duracion_segundos != null ? formatDuration(n.duracion_segundos) : null]
-                            .filter(Boolean)
-                            .join(' · ')}
-                        </span>
-                      </span>
+                  <div key={n.id} className={CARD + ' flex items-center gap-4 p-4'}>
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-gradient text-white shadow-sm">
+                      <Mic width={18} height={18} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-bold text-ink">{n.titulo || 'Nota de voz'}</div>
+                      <div className="text-xs text-ink-muted">
+                        {[formatWhen(n.created_at), n.duracion_segundos != null ? formatDuration(n.duracion_segundos) : null]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </div>
+                      {audioUrls[n.id] && (
+                        <audio controls autoPlay src={audioUrls[n.id]} className="mt-2 w-full" />
+                      )}
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      {!audioUrls[n.id] && (
+                        <button
+                          type="button"
+                          onClick={() => playNota(n.id)}
+                          disabled={loadingAudioId === n.id}
+                          className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-ink-muted transition-colors duration-150 hover:border-accent/40 hover:text-accent disabled:opacity-60"
+                        >
+                          {loadingAudioId === n.id ? 'Cargando…' : 'Reproducir'}
+                        </button>
+                      )}
                       <button
                         type="button"
-                        className="glosario__delete"
                         onClick={() => handleDelete(n)}
                         aria-label="Borrar nota"
                         title="Borrar nota"
+                        className="shrink-0 rounded-lg p-1.5 text-ink-soft transition-colors duration-150 hover:bg-danger/10 hover:text-danger"
                       >
                         <Trash width={16} height={16} />
                       </button>
                     </div>
-                    {audioUrls[n.id] ? (
-                      <audio controls autoPlay src={audioUrls[n.id]} className="notasvoz__audio" />
-                    ) : (
-                      <button
-                        type="button"
-                        className="settings__btn"
-                        onClick={() => playNota(n.id)}
-                        disabled={loadingAudioId === n.id}
-                      >
-                        {loadingAudioId === n.id ? 'Cargando…' : 'Reproducir'}
-                      </button>
-                    )}
                   </div>
                 ))}
               </div>
