@@ -12,7 +12,7 @@ import SearchBar from './components/SearchBar.jsx';
 import UserMenu from './components/UserMenu.jsx';
 import UpgradeModal from './components/UpgradeModal.jsx';
 import { Sun, Moon, Library, Menu, X } from './components/icons.jsx';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext.jsx';
 import { useFavorites } from './context/FavoritesContext.jsx';
 
@@ -152,6 +152,8 @@ export default function App() {
   const openFileInReader = useCallback((file) => {
     setOpenFile(file);
     if (!file || file.is_folder) return;
+    // Historial de lectura (mejor esfuerzo: nunca bloquea ni rompe la lectura).
+    if (isAuthenticated) api.logActividad(file, 'vista');
     setRecents((prev) => {
       const slim = {
         id: file.id,
@@ -170,7 +172,7 @@ export default function App() {
       }
       return next;
     });
-  }, []);
+  }, [isAuthenticated]);
 
   // --- Búsqueda ---
   const [searchValue, setSearchValue] = useState('');
@@ -392,6 +394,20 @@ export default function App() {
     },
     [plan, openFileInReader]
   );
+
+  // Reabrir un documento desde Historial de lectura / Mis descargas: esas
+  // pantallas navegan aquí con `state.openFile` (el archivo reconstruido a
+  // partir de su propia fila de actividad). Se abre una sola vez al llegar y
+  // se limpia el state para que "atrás/adelante" no lo vuelva a disparar.
+  const location = useLocation();
+  const navigate = useNavigate();
+  useEffect(() => {
+    const file = location.state?.openFile;
+    if (!file) return;
+    handleOpenFile(file);
+    navigate('.', { replace: true, state: {} });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
 
   // El lector pide Pro para DESCARGAR (la lectura online es libre para todos).
   const requireProForDownload = useCallback((file) => {

@@ -1,22 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Activity } from './icons.jsx';
-
-// Hora relativa breve en español ("hace 2 días"). Solo para esta vista —
-// si se necesita en otro lado más adelante, se puede extraer a lib/.
-function timeAgo(date) {
-  const diffMs = Date.now() - date.getTime();
-  const min = Math.floor(diffMs / 60000);
-  if (min < 1) return 'ahora';
-  if (min < 60) return `hace ${min} min`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `hace ${hr} h`;
-  const day = Math.floor(hr / 24);
-  if (day === 1) return 'ayer';
-  if (day < 7) return `hace ${day} días`;
-  const week = Math.floor(day / 7);
-  if (week < 5) return `hace ${week} sem`;
-  return date.toLocaleDateString('es', { day: 'numeric', month: 'short' });
-}
+import { timeAgo } from '../lib/fileType.js';
 
 // "Actividad reciente": timeline unificado de altas/eventos reales (pacientes,
 // tareas, glosario, exámenes) ya combinado y ordenado por Dashboard.jsx. Este

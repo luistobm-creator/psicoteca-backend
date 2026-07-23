@@ -123,6 +123,8 @@ export default function ReaderPanel({ file, plan, onRequirePro, onClose, focusMo
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(objUrl), 1000);
+      // Mis descargas (mejor esfuerzo: nunca bloquea ni rompe la descarga real).
+      api.logActividad(file, 'descarga');
     } catch {
       /* la descarga falló; no rompe el visor */
     } finally {

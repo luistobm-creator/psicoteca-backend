@@ -442,3 +442,33 @@ export function updatePlantilla(id, changes) {
 export function deletePlantilla(id) {
   return request('DELETE', `/api/plantillas/${encodeURIComponent(id)}`);
 }
+
+// ---------------------------------------------------------------------------
+// Actividad de biblioteca: Historial de lectura + Mis descargas (misma
+// tabla, filtrada por `accion`). El registro es "mejor esfuerzo": si falla,
+// no debe interrumpir la lectura/descarga real (ver logActividad).
+// ---------------------------------------------------------------------------
+
+/** Historial de lectura (accion='vista') o descargas (accion='descarga'). */
+export function getActividadBiblioteca(accion) {
+  const qs = accion ? `?accion=${encodeURIComponent(accion)}` : '';
+  return request('GET', `/api/actividad-biblioteca${qs}`);
+}
+
+/**
+ * Registra que se vio o descargó un documento. Fire-and-forget: nunca lanza
+ * (silencia cualquier error) para no romper la experiencia de lectura si
+ * el registro falla — solo importa cuando alguien visita el historial.
+ */
+export function logActividad(file, accion) {
+  request('POST', '/api/actividad-biblioteca', {
+    item_id: file.id,
+    item_name: file.name,
+    item_path: file.path || null,
+    item_mime: file.mime_type || null,
+    item_is_premium: !!file.is_premium,
+    accion,
+  }).catch(() => {
+    /* mejor esfuerzo: no bloquea la lectura/descarga real */
+  });
+}

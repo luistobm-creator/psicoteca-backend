@@ -31,6 +31,7 @@ from app.config import settings
 from app.database import init_db
 from app.routers import (
     account,
+    actividad_biblioteca,
     agenda,
     billing,
     consultorio_config,
@@ -111,6 +112,7 @@ app.include_router(examenes.router)
 app.include_router(facturacion.router)
 app.include_router(consultorio_config.router)
 app.include_router(plantillas.router)
+app.include_router(actividad_biblioteca.router)
 
 
 # --- Endpoints utilitarios --------------------------------------------------
