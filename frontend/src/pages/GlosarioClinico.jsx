@@ -1,8 +1,29 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Library, Plus, Search, Trash, X } from '../components/icons.jsx';
+import { ArrowLeft, Brain, Layers, Library, Plus, Search, Sparkles, Trash, X } from '../components/icons.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useCountUp } from '../lib/useCountUp.js';
+import { dailyCounts } from '../lib/stats.js';
 import * as api from '../api.js';
+
+const CARD =
+  'group relative overflow-hidden rounded-2xl border border-border bg-surface shadow-sm ' +
+  'transition-all duration-300 hover:-translate-y-1 hover:border-accent/30 hover:shadow-lift dark:hover:shadow-lift-dark';
+
+function MiniStat({ icon, value, label }) {
+  const animated = useCountUp(typeof value === 'number' ? value : 0);
+  return (
+    <div className={CARD + ' flex items-center gap-3 p-4'}>
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-gradient text-white shadow-sm">
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <div className="text-2xl font-black leading-none tabular-nums text-ink">{animated}</div>
+        <div className="mt-1 text-xs font-medium text-ink-muted">{label}</div>
+      </div>
+    </div>
+  );
+}
 
 // Glosario clínico personal: cada usuario agrega, busca y lee sus propios
 // términos (Supabase, tabla `glosario_clinico`, ver script_glosario_supabase.sql
@@ -50,6 +71,13 @@ export default function GlosarioClinico() {
     );
   }, [terms, query]);
 
+  // Mini-stats derivadas del glosario ya cargado (sin llamadas nuevas).
+  const categoriasCount = useMemo(
+    () => new Set(terms.map((t) => t.categoria).filter(Boolean)).size,
+    [terms]
+  );
+  const nuevosEstaSemana = useMemo(() => dailyCounts(terms).reduce((a, b) => a + b, 0), [terms]);
+
   const handleDelete = async (id) => {
     const prev = terms;
     setTerms((cur) => cur.filter((t) => t.id !== id));
@@ -64,7 +92,7 @@ export default function GlosarioClinico() {
 
   return (
     <div className="settings">
-      <div className="settings__panel fade-in">
+      <div className="settings__panel fade-in max-w-[900px]">
         <div className="settings__topbar">
           <Link to="/app" className="settings__brand" title="Ir a la biblioteca">
             <span className="settings__logo">
@@ -78,26 +106,37 @@ export default function GlosarioClinico() {
           </Link>
         </div>
 
-        <header className="settings__head">
-          <h1 className="settings__title">Glosario clínico</h1>
-          <p className="settings__subtitle">Tus propios términos, definiciones y notas.</p>
-        </header>
-
-        <div className="glosario__toolbar">
-          <div className="glosario__search">
-            <Search width={16} height={16} />
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar término, definición o categoría…"
-              aria-label="Buscar en el glosario"
-            />
+        <header className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="settings__title">Glosario clínico</h1>
+            <p className="settings__subtitle">Tus propios términos, definiciones y notas.</p>
           </div>
-          <button type="button" className="glosario__addbtn" onClick={() => setModalOpen(true)}>
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded-xl bg-accent-gradient px-4 py-2.5 text-sm font-bold text-white shadow-[0_2px_10px_-2px_var(--accent-soft)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_18px_-4px_var(--accent-soft)] active:translate-y-0"
+            onClick={() => setModalOpen(true)}
+          >
             <Plus width={16} height={16} />
             Agregar término
           </button>
+        </header>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <MiniStat icon={<Brain width={18} height={18} />} value={terms.length} label="Términos guardados" />
+          <MiniStat icon={<Layers width={18} height={18} />} value={categoriasCount} label="Categorías distintas" />
+          <MiniStat icon={<Sparkles width={18} height={18} />} value={nuevosEstaSemana} label="Nuevos esta semana" />
+        </div>
+
+        <div className="flex items-center gap-2 rounded-xl border border-border-strong bg-bg px-3 transition-colors duration-150 focus-within:border-accent focus-within:shadow-[0_0_0_3px_var(--accent-weak)]">
+          <Search width={16} height={16} className="shrink-0 text-ink-muted" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar término, definición o categoría…"
+            aria-label="Buscar en el glosario"
+            className="h-11 w-full border-none bg-transparent text-sm text-ink outline-none placeholder:text-ink-soft"
+          />
         </div>
 
         {loading && <p className="settings__muted">Cargando…</p>}
@@ -111,23 +150,27 @@ export default function GlosarioClinico() {
         )}
 
         {!loading && !error && filtered.length > 0 && (
-          <div className="glosario__grid">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map((t) => (
-              <article key={t.id} className="glosario__card">
-                <div className="glosario__cardhead">
-                  <h3 className="glosario__termino">{t.termino}</h3>
+              <article key={t.id} className={CARD + ' flex flex-col gap-2.5 p-4'}>
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="font-bold leading-snug text-ink">{t.termino}</h3>
                   <button
                     type="button"
-                    className="glosario__delete"
                     onClick={() => handleDelete(t.id)}
                     aria-label={`Borrar ${t.termino}`}
                     title="Borrar término"
+                    className="shrink-0 rounded-lg p-1.5 text-ink-soft transition-colors duration-150 hover:bg-danger/10 hover:text-danger"
                   >
-                    <Trash width={15} height={15} />
+                    <Trash width={14} height={14} />
                   </button>
                 </div>
-                {t.categoria && <span className="glosario__chip">{t.categoria}</span>}
-                <p className="glosario__definicion">{t.definicion}</p>
+                {t.categoria && (
+                  <span className="inline-flex w-fit items-center gap-1 rounded-full bg-accent-weak px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-accent">
+                    {t.categoria}
+                  </span>
+                )}
+                <p className="whitespace-pre-line text-[13.5px] leading-relaxed text-ink-muted">{t.definicion}</p>
               </article>
             ))}
           </div>

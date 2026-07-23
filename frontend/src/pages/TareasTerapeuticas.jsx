@@ -1,8 +1,28 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, Library, Plus, X } from '../components/icons.jsx';
+import { AlertTriangle, ArrowLeft, Check, ClipboardList, Library, Plus, X } from '../components/icons.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useCountUp } from '../lib/useCountUp.js';
 import * as api from '../api.js';
+
+const CARD =
+  'group relative overflow-hidden rounded-2xl border border-border bg-surface shadow-sm ' +
+  'transition-all duration-300 hover:-translate-y-1 hover:border-accent/30 hover:shadow-lift dark:hover:shadow-lift-dark';
+
+function MiniStat({ icon, value, label, featured = false }) {
+  const animated = useCountUp(typeof value === 'number' ? value : 0);
+  return (
+    <div className={CARD + ' flex items-center gap-3 p-4' + (featured ? ' sm:col-span-1' : '')}>
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-gradient text-white shadow-sm">
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <div className="text-2xl font-black leading-none tabular-nums text-ink">{animated}</div>
+        <div className="mt-1 text-xs font-medium text-ink-muted">{label}</div>
+      </div>
+    </div>
+  );
+}
 
 const TIPOS = [
   { value: 'ejercicio', label: 'Ejercicio' },
@@ -66,6 +86,8 @@ export default function TareasTerapeuticas() {
 
   const visibles = useMemo(() => tareas.filter((t) => t.estado === tab), [tareas, tab]);
   const pendientesCount = useMemo(() => tareas.filter((t) => t.estado === 'pendiente').length, [tareas]);
+  const completadasCount = useMemo(() => tareas.filter((t) => t.estado === 'completada').length, [tareas]);
+  const vencidasCount = useMemo(() => tareas.filter((t) => isVencida(t)).length, [tareas, hoy]);
 
   // Actualización optimista con rollback, igual que patch() en AgendaDeCitas.
   const patch = async (id, changes) => {
@@ -88,9 +110,15 @@ export default function TareasTerapeuticas() {
 
   if (authLoading || !isAuthenticated) return null;
 
+  const chipBase =
+    'inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-ink-muted transition-colors duration-150';
+  const chipBtn = chipBase + ' hover:border-accent/40 hover:text-accent cursor-pointer';
+  const chipOn = 'border-transparent bg-accent-weak text-accent hover:border-transparent hover:text-accent';
+  const chipDanger = 'border-transparent bg-danger/10 text-danger hover:border-transparent hover:text-danger';
+
   return (
     <div className="settings">
-      <div className="settings__panel fade-in">
+      <div className="settings__panel fade-in max-w-[860px]">
         <div className="settings__topbar">
           <Link to="/app" className="settings__brand" title="Ir a la biblioteca">
             <span className="settings__logo">
@@ -104,18 +132,36 @@ export default function TareasTerapeuticas() {
           </Link>
         </div>
 
-        <header className="settings__head agenda__head">
+        <header className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="settings__title">Tareas terapéuticas</h1>
             <p className="settings__subtitle">
               {pendientesCount} {pendientesCount === 1 ? 'pendiente' : 'pendientes'} en tu consulta
             </p>
           </div>
-          <button type="button" className="glosario__addbtn" onClick={() => setShowNew(true)}>
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded-xl bg-accent-gradient px-4 py-2.5 text-sm font-bold text-white shadow-[0_2px_10px_-2px_var(--accent-soft)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_18px_-4px_var(--accent-soft)] active:translate-y-0"
+            onClick={() => setShowNew(true)}
+          >
             <Plus width={16} height={16} />
             Nueva tarea
           </button>
         </header>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <MiniStat icon={<ClipboardList width={18} height={18} />} value={pendientesCount} label="Pendientes" featured />
+          <MiniStat icon={<Check width={18} height={18} />} value={completadasCount} label="Completadas" />
+          <div className={CARD + ' flex items-center gap-3 p-4'}>
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-danger/10 text-danger shadow-sm">
+              <AlertTriangle width={18} height={18} />
+            </span>
+            <div>
+              <div className="text-2xl font-black leading-none tabular-nums text-ink">{vencidasCount}</div>
+              <div className="mt-1 text-xs font-medium text-ink-muted">Vencidas</div>
+            </div>
+          </div>
+        </div>
 
         <div className="agenda__modetoggle">
           <button type="button" className={tab === 'pendiente' ? 'is-active' : ''} onClick={() => setTab('pendiente')}>
@@ -129,66 +175,76 @@ export default function TareasTerapeuticas() {
         {loading && <p className="settings__muted">Cargando…</p>}
         {!loading && error && <p className="settings__error">{error}</p>}
         {!loading && !error && visibles.length === 0 && (
-          <div className="agenda__empty">
-            <p className="settings__title" style={{ fontSize: 16 }}>
-              {tab === 'pendiente' ? 'Sin pendientes' : 'Sin completadas'}
-            </p>
-            <p className="settings__muted">
+          <div className="rounded-2xl border border-dashed border-border bg-surface-2/40 px-6 py-12 text-center">
+            <p className="text-base font-bold text-ink">{tab === 'pendiente' ? 'Sin pendientes' : 'Sin completadas'}</p>
+            <p className="mt-1 text-sm text-ink-muted">
               {tab === 'pendiente' ? 'No tienes tareas asignadas por hacer.' : 'Aún no marcas ninguna tarea como completada.'}
             </p>
           </div>
         )}
 
-        {!loading &&
-          !error &&
-          visibles.map((t) => (
-            <article key={t.id} className="agenda__card">
-              <div className="agenda__bar" />
-              <div className="agenda__body">
-                <div className="agenda__patient">{t.paciente_nombre}</div>
-                <div className="settings__muted">{t.titulo}</div>
-                {t.descripcion && <p className="settings__muted" style={{ marginTop: 4 }}>{t.descripcion}</p>}
-                <div className="agenda__chips">
-                  <span className="agenda__chip">{tipoLabel(t.tipo)}</span>
-                  {t.estado === 'pendiente' && t.fecha_limite && (
-                    <span className={'agenda__chip' + (isVencida(t) ? ' agenda__chip--danger' : '')}>
-                      {isVencida(t) ? 'Vencida · ' : 'Vence '}
-                      {formatShort(t.fecha_limite)}
-                    </span>
+        <div className="flex flex-col gap-3">
+          {!loading &&
+            !error &&
+            visibles.map((t) => (
+              <article key={t.id} className={CARD + ' flex gap-4 p-4'}>
+                <div
+                  className={
+                    'flex min-w-[76px] shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl px-3 py-2 text-white shadow-sm ' +
+                    (t.estado === 'pendiente' && isVencida(t) ? 'bg-danger/90' : 'bg-accent-gradient')
+                  }
+                >
+                  {t.estado === 'completada' ? (
+                    <>
+                      <Check width={20} height={20} />
+                      {t.completed_at && (
+                        <span className="text-[10.5px] font-semibold opacity-80">
+                          {formatShort(t.completed_at.slice(0, 10))}
+                        </span>
+                      )}
+                    </>
+                  ) : t.fecha_limite ? (
+                    <>
+                      <span className="text-base font-black leading-none tabular-nums">
+                        {formatShort(t.fecha_limite)}
+                      </span>
+                      <span className="text-[10.5px] font-semibold opacity-80">
+                        {isVencida(t) ? 'Vencida' : 'Vence'}
+                      </span>
+                    </>
+                  ) : (
+                    <ClipboardList width={20} height={20} />
                   )}
-                  {t.estado === 'completada' && t.completed_at && (
-                    <span className="agenda__chip">Completada {formatShort(t.completed_at.slice(0, 10))}</span>
-                  )}
-                  {t.estado === 'pendiente' && (
-                    <button
-                      type="button"
-                      className="agenda__chip agenda__chip--btn"
-                      onClick={() => patch(t.id, { estado: 'completada' })}
-                    >
-                      <Check width={12} height={12} />
-                      Marcar completada
-                    </button>
-                  )}
-                  {t.estado === 'completada' && (
-                    <button
-                      type="button"
-                      className="agenda__chip agenda__chip--btn"
-                      onClick={() => patch(t.id, { estado: 'pendiente' })}
-                    >
-                      Reabrir
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    className="agenda__chip agenda__chip--btn agenda__chip--danger"
-                    onClick={() => handleCancel(t)}
-                  >
-                    Cancelar
-                  </button>
                 </div>
-              </div>
-            </article>
-          ))}
+                <div className="min-w-0 flex-1">
+                  <div className="font-bold text-ink">{t.paciente_nombre}</div>
+                  <div className="text-xs text-ink-muted">{t.titulo}</div>
+                  {t.descripcion && <p className="mt-1 text-xs text-ink-soft line-clamp-2">{t.descripcion}</p>}
+                  <div className="mt-2.5 flex flex-wrap gap-1.5">
+                    <span className={chipBase}>{tipoLabel(t.tipo)}</span>
+                    {t.estado === 'pendiente' && (
+                      <button
+                        type="button"
+                        className={chipBtn + ' ' + chipOn}
+                        onClick={() => patch(t.id, { estado: 'completada' })}
+                      >
+                        <Check width={12} height={12} />
+                        Marcar completada
+                      </button>
+                    )}
+                    {t.estado === 'completada' && (
+                      <button type="button" className={chipBtn} onClick={() => patch(t.id, { estado: 'pendiente' })}>
+                        Reabrir
+                      </button>
+                    )}
+                    <button type="button" className={chipBtn + ' ' + chipDanger} onClick={() => handleCancel(t)}>
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ))}
+        </div>
       </div>
 
       {showNew && (
