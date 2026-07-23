@@ -23,6 +23,7 @@ import PlantillasFormato from './pages/PlantillasFormato.jsx';
 import ActividadBiblioteca from './pages/ActividadBiblioteca.jsx';
 import SugerenciasBuzon from './pages/SugerenciasBuzon.jsx';
 import Notificaciones from './pages/Notificaciones.jsx';
+import ReferirColegas from './pages/ReferirColegas.jsx';
 import ComingSoon from './pages/ComingSoon.jsx';
 // Recharts (~400 KB) solo se necesita en esta página — se carga aparte, no en
 // el bundle principal, mismo criterio que PdfViewer.jsx con pdfjs-dist.
@@ -63,6 +64,7 @@ createRoot(document.getElementById('root')).render(
             <Route path="/app/descargas" element={<ActividadBiblioteca accion="descarga" />} />
             <Route path="/app/sugerencias" element={<SugerenciasBuzon />} />
             <Route path="/app/notificaciones" element={<Notificaciones />} />
+            <Route path="/app/referidos" element={<ReferirColegas />} />
             <Route
               path="/app/consultorio/estadisticas"
               element={
