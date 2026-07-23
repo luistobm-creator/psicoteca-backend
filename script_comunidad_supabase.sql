@@ -96,18 +96,31 @@ create table if not exists public.grupos_miembros (
 
 alter table public.grupos_miembros enable row level security;
 
+-- Función SECURITY DEFINER para comprobar membresía: IMPRESCINDIBLE. Una
+-- policy de "select" en grupos_miembros que consulta grupos_miembros
+-- directamente (aunque sea con un alias distinto) dispara la MISMA policy
+-- recursivamente sobre esa subconsulta -> "infinite recursion detected in
+-- policy". SECURITY DEFINER hace que la función corra con los privilegios
+-- de quien la creó (no los del usuario que llama), así que su consulta
+-- interna NO vuelve a pasar por RLS y la recursión nunca ocurre.
+create or replace function public.is_miembro_de_grupo(p_grupo_id uuid, p_user_id uuid)
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.grupos_miembros
+    where grupo_id = p_grupo_id and user_id = p_user_id
+  );
+$$;
+
 -- Ves las filas de membresia de los grupos donde TU ya eres miembro (para
--- poder listar a tus compañeros de grupo). Patron "auto-referencia": la
--- policy consulta la misma tabla para confirmar tu propia membresia.
+-- poder listar a tus compañeros de grupo).
 create policy "select_miembros_de_mis_grupos"
   on public.grupos_miembros for select
-  using (
-    exists (
-      select 1 from public.grupos_miembros gm2
-      where gm2.grupo_id = grupos_miembros.grupo_id
-        and gm2.user_id = auth.uid()
-    )
-  );
+  using (public.is_miembro_de_grupo(grupos_miembros.grupo_id, auth.uid()));
 
 create policy "insert_own_membership"
   on public.grupos_miembros for insert
@@ -132,26 +145,18 @@ alter table public.grupos_mensajes enable row level security;
 
 -- Solo lees mensajes de grupos donde ERES MIEMBRO ACTUAL (si sales del
 -- grupo, pierdes acceso a su historial -- igual que la mayoria de apps de
--- chat/canales).
+-- chat/canales). Usa la misma función SECURITY DEFINER de arriba -- evita
+-- depender de que la policy de grupos_miembros esté "bien" para no
+-- arrastrar la misma recursión hacia esta tabla.
 create policy "select_mensajes_de_mis_grupos"
   on public.grupos_mensajes for select
-  using (
-    exists (
-      select 1 from public.grupos_miembros gm
-      where gm.grupo_id = grupos_mensajes.grupo_id
-        and gm.user_id = auth.uid()
-    )
-  );
+  using (public.is_miembro_de_grupo(grupos_mensajes.grupo_id, auth.uid()));
 
 create policy "insert_mensajes_si_soy_miembro"
   on public.grupos_mensajes for insert
   with check (
     auth.uid() = user_id
-    and exists (
-      select 1 from public.grupos_miembros gm
-      where gm.grupo_id = grupos_mensajes.grupo_id
-        and gm.user_id = auth.uid()
-    )
+    and public.is_miembro_de_grupo(grupos_mensajes.grupo_id, auth.uid())
   );
 
 create policy "delete_own_mensaje_grupo"
