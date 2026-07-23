@@ -304,13 +304,13 @@ export default function NotasDeVoz() {
               <MiniStat icon={<Calendar width={18} height={18} />} display={ultimaNotaLabel} label="Última nota" />
             </div>
 
-            <div className="max-w-[380px]">
+            <div className="flex max-w-[380px] flex-col gap-1.5">
               <label className="settings__label" htmlFor="notasvoz-paciente">
                 Paciente
               </label>
               <select
                 id="notasvoz-paciente"
-                className="settings__input mt-1.5"
+                className="settings__input"
                 value={pacienteId}
                 onChange={(e) => setPacienteId(e.target.value)}
                 disabled={selectorLocked}

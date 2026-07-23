@@ -1,8 +1,35 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, Clock, Library, Trash, X } from '../components/icons.jsx';
+import { ArrowLeft, Check, Clock, GraduationCap, Library, Star, Trash, TrendingUp, X } from '../components/icons.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useCountUp } from '../lib/useCountUp.js';
 import * as api from '../api.js';
+
+const CARD =
+  'group relative overflow-hidden rounded-2xl border border-border bg-surface shadow-sm ' +
+  'transition-all duration-300 hover:-translate-y-1 hover:border-accent/30 hover:shadow-lift dark:hover:shadow-lift-dark';
+const PANEL = 'rounded-2xl border border-border bg-surface shadow-sm p-6';
+const PRIMARY_BTN =
+  'w-full rounded-xl bg-accent-gradient px-4 py-3 text-sm font-bold text-white shadow-[0_2px_10px_-2px_var(--accent-soft)] ' +
+  'transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_18px_-4px_var(--accent-soft)] active:translate-y-0 ' +
+  'disabled:opacity-60 disabled:hover:translate-y-0';
+
+function MiniStat({ icon, value, display, label }) {
+  const animated = useCountUp(typeof value === 'number' ? value : 0);
+  return (
+    <div className={CARD + ' flex items-center gap-3 p-4'}>
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-gradient text-white shadow-sm">
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <div className="text-2xl font-black leading-none tabular-nums text-ink">
+          {display != null ? display : animated}
+        </div>
+        <div className="mt-1 text-xs font-medium text-ink-muted">{label}</div>
+      </div>
+    </div>
+  );
+}
 
 const NUM_PREGUNTAS_OPCIONES = [5, 10, 15, 20];
 const TODAS = ''; // valor de categoriaSel para "todas las categorías"
@@ -201,6 +228,17 @@ export default function ModoExamen() {
     cargarHistorial();
   };
 
+  // Mini-stats del historial, derivadas de `historial` ya cargado.
+  const promedioPct = useMemo(() => {
+    if (historial.length === 0) return null;
+    const pcts = historial.map((e) => (e.respuestas_correctas / e.num_preguntas) * 100);
+    return Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length);
+  }, [historial]);
+  const mejorPct = useMemo(() => {
+    if (historial.length === 0) return null;
+    return Math.round(Math.max(...historial.map((e) => (e.respuestas_correctas / e.num_preguntas) * 100)));
+  }, [historial]);
+
   const borrarResultado = async (id) => {
     if (!window.confirm('¿Borrar este resultado del historial?')) return;
     const prev = historial;
@@ -255,10 +293,14 @@ export default function ModoExamen() {
         )}
 
         {!terminosLoading && !terminosError && terminos.length > 0 && modo === 'config' && (
-          <div className="examen__card">
-            <div className="modal__field">
+          <div className={PANEL + ' flex flex-col gap-4'}>
+            <div className="flex flex-col gap-1.5">
               <label className="settings__label">Categoría</label>
-              <select className="settings__input" value={categoriaSel} onChange={(e) => setCategoriaSel(e.target.value)}>
+              <select
+                className="settings__input"
+                value={categoriaSel}
+                onChange={(e) => setCategoriaSel(e.target.value)}
+              >
                 <option value={TODAS}>Todas ({terminos.length} términos)</option>
                 {categorias.map((c) => (
                   <option key={c} value={c}>
@@ -269,12 +311,12 @@ export default function ModoExamen() {
             </div>
 
             {pool.length < 4 ? (
-              <p className="settings__error">
+              <p className="rounded-xl bg-danger/10 px-4 py-3 text-sm text-danger">
                 Necesitas al menos 4 términos en esta categoría para generar un examen (tienes {pool.length}).
               </p>
             ) : (
               <>
-                <div className="modal__field">
+                <div className="flex flex-col gap-1.5">
                   <label className="settings__label">Número de preguntas</label>
                   <select
                     className="settings__input"
@@ -289,7 +331,7 @@ export default function ModoExamen() {
                   </select>
                 </div>
 
-                <div className="modal__field">
+                <div className="flex flex-col gap-1.5">
                   <label className="settings__label">Cronómetro</label>
                   <div className="agenda__modetoggle">
                     <button type="button" className={!cronometroActivo ? 'is-active' : ''} onClick={() => setCronometroActivo(false)}>
@@ -302,7 +344,7 @@ export default function ModoExamen() {
                 </div>
 
                 {cronometroActivo && (
-                  <div className="modal__field">
+                  <div className="flex flex-col gap-1.5">
                     <label className="settings__label">Minutos</label>
                     <input
                       type="number"
@@ -315,13 +357,7 @@ export default function ModoExamen() {
                   </div>
                 )}
 
-                <button
-                  type="button"
-                  className="settings__btn settings__btn--accent"
-                  disabled={!puedeComenzar}
-                  onClick={comenzar}
-                  style={{ width: '100%', marginTop: 8 }}
-                >
+                <button type="button" className={PRIMARY_BTN + ' mt-2'} disabled={!puedeComenzar} onClick={comenzar}>
                   Comenzar examen
                 </button>
               </>
@@ -330,39 +366,55 @@ export default function ModoExamen() {
         )}
 
         {modo === 'en_progreso' && preguntas.length > 0 && (
-          <div className="examen__card">
-            <div className="examen__progress">
-              Pregunta {indiceActual + 1} de {preguntas.length}
+          <div className={PANEL}>
+            <div className="mb-4 flex items-center justify-between text-sm font-semibold text-ink-muted">
+              <span>
+                Pregunta {indiceActual + 1} de {preguntas.length}
+              </span>
               {tiempoRestante != null && (
-                <span className="examen__timer">
+                <span
+                  className={
+                    'inline-flex items-center gap-1.5 font-bold ' + (tiempoRestante <= 30 ? 'text-danger' : 'text-ink')
+                  }
+                >
                   <Clock width={13} height={13} />
                   {formatMinSeg(tiempoRestante)}
                 </span>
               )}
             </div>
-            <p className="examen__prompt">¿Cuál es la definición correcta de…</p>
-            <h2 className="examen__termino">{preguntas[indiceActual].termino}</h2>
 
-            <div className="examen__opciones">
-              {preguntas[indiceActual].opciones.map((op, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  className={'examen__opcion' + (respuestas[indiceActual] === idx ? ' is-selected' : '')}
-                  onClick={() => seleccionarOpcion(idx)}
-                >
-                  {op}
-                </button>
-              ))}
+            <div className="mb-5 h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
+              <div
+                className="h-full rounded-full bg-accent-gradient transition-all duration-300"
+                style={{ width: `${(indiceActual / preguntas.length) * 100}%` }}
+              />
             </div>
 
-            <button
-              type="button"
-              className="settings__btn settings__btn--accent"
-              disabled={respuestas[indiceActual] == null}
-              onClick={siguiente}
-              style={{ width: '100%' }}
-            >
+            <p className="text-sm text-ink-muted">¿Cuál es la definición correcta de…</p>
+            <h2 className="mb-5 mt-1 text-xl font-black leading-snug text-ink">{preguntas[indiceActual].termino}</h2>
+
+            <div className="mb-5 flex flex-col gap-2.5">
+              {preguntas[indiceActual].opciones.map((op, idx) => {
+                const selected = respuestas[indiceActual] === idx;
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => seleccionarOpcion(idx)}
+                    className={
+                      'rounded-xl border px-4 py-3 text-left text-sm leading-relaxed transition-all duration-150 ' +
+                      (selected
+                        ? 'border-accent bg-accent-weak text-ink'
+                        : 'border-border-strong bg-bg text-ink hover:border-accent/50')
+                    }
+                  >
+                    {op}
+                  </button>
+                );
+              })}
+            </div>
+
+            <button type="button" className={PRIMARY_BTN} disabled={respuestas[indiceActual] == null} onClick={siguiente}>
               {indiceActual < preguntas.length - 1 ? 'Siguiente' : 'Terminar'}
             </button>
           </div>
@@ -370,25 +422,20 @@ export default function ModoExamen() {
 
         {modo === 'resultados' && resultado && (
           <>
-            <div className="examen__score">
-              <div className="examen__scorenum">
+            <div className={PANEL + ' text-center'}>
+              <div className="text-5xl font-black leading-none text-accent">
                 {resultado.correctas}/{resultado.preguntas.length}
               </div>
-              <p className="examen__scorelabel">
+              <p className="mt-2.5 text-sm font-medium text-ink-muted">
                 {Math.round((resultado.correctas / resultado.preguntas.length) * 100)}% correcto
                 {resultado.tiempoUsado != null && ` · ${formatMinSeg(resultado.tiempoUsado)} min`}
               </p>
-              {guardadoError && <p className="settings__error">{guardadoError}</p>}
+              {guardadoError && <p className="mt-2 text-sm text-danger">{guardadoError}</p>}
             </div>
 
             <RevisionPreguntas preguntas={resultado.preguntas} />
 
-            <button
-              type="button"
-              className="settings__btn settings__btn--accent"
-              onClick={() => setModo('config')}
-              style={{ width: '100%', marginTop: 16 }}
-            >
+            <button type="button" className={PRIMARY_BTN} onClick={() => setModo('config')}>
               Nuevo examen
             </button>
           </>
@@ -401,47 +448,62 @@ export default function ModoExamen() {
             {!historialLoading && !historialError && historial.length === 0 && (
               <p className="settings__muted">Todavía no has hecho ningún examen.</p>
             )}
+
             {!historialLoading && historial.length > 0 && (
-              <div className="notasvoz__list">
-                {historial.map((e) => (
-                  <div key={e.id} className="notasvoz__item">
-                    <div className="notasvoz__itemhead">
-                      <span className="notasvoz__iteminfo">
-                        <span className="notasvoz__itemtitle">{e.categoria || 'Todas las categorías'}</span>
-                        <span className="settings__muted">
-                          {formatFecha(e.created_at)} · {e.respuestas_correctas}/{e.num_preguntas} correctas
-                          {e.tiempo_usado_segundos != null && ` · ${formatMinSeg(e.tiempo_usado_segundos)} min`}
+              <>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <MiniStat icon={<GraduationCap width={18} height={18} />} value={historial.length} label="Exámenes hechos" />
+                  <MiniStat
+                    icon={<TrendingUp width={18} height={18} />}
+                    display={promedioPct == null ? '—' : `${promedioPct}%`}
+                    label="Promedio de aciertos"
+                  />
+                  <MiniStat
+                    icon={<Star width={18} height={18} />}
+                    display={mejorPct == null ? '—' : `${mejorPct}%`}
+                    label="Mejor resultado"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  {historial.map((e) => (
+                    <div key={e.id} className={CARD + ' flex flex-col gap-3 p-4'}>
+                      <div className="flex items-start gap-3">
+                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-gradient text-xs font-black text-white shadow-sm">
+                          {Math.round((e.respuestas_correctas / e.num_preguntas) * 100)}%
                         </span>
-                      </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="font-bold text-ink">{e.categoria || 'Todas las categorías'}</div>
+                          <div className="text-xs text-ink-muted">
+                            {formatFecha(e.created_at)} · {e.respuestas_correctas}/{e.num_preguntas} correctas
+                            {e.tiempo_usado_segundos != null && ` · ${formatMinSeg(e.tiempo_usado_segundos)} min`}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => borrarResultado(e.id)}
+                          aria-label="Borrar resultado"
+                          title="Borrar resultado"
+                          className="shrink-0 rounded-lg p-1.5 text-ink-soft transition-colors duration-150 hover:bg-danger/10 hover:text-danger"
+                        >
+                          <Trash width={15} height={15} />
+                        </button>
+                      </div>
                       <button
                         type="button"
-                        className="glosario__delete"
-                        onClick={() => borrarResultado(e.id)}
-                        aria-label="Borrar resultado"
-                        title="Borrar resultado"
+                        onClick={() => setExpandido((cur) => (cur === e.id ? null : e.id))}
+                        className="self-start rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-ink-muted transition-colors duration-150 hover:border-accent/40 hover:text-accent"
                       >
-                        <Trash width={16} height={16} />
+                        {expandido === e.id ? 'Ocultar detalle' : 'Ver detalle'}
                       </button>
+                      {expandido === e.id && <RevisionPreguntas preguntas={e.preguntas} />}
                     </div>
-                    <button
-                      type="button"
-                      className="settings__btn"
-                      onClick={() => setExpandido((cur) => (cur === e.id ? null : e.id))}
-                    >
-                      {expandido === e.id ? 'Ocultar detalle' : 'Ver detalle'}
-                    </button>
-                    {expandido === e.id && <RevisionPreguntas preguntas={e.preguntas} />}
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </>
             )}
 
-            <button
-              type="button"
-              className="settings__btn"
-              onClick={() => setModo('config')}
-              style={{ width: '100%', marginTop: 16 }}
-            >
+            <button type="button" className="settings__btn w-full" onClick={() => setModo('config')}>
               Volver
             </button>
           </>
@@ -456,20 +518,29 @@ export default function ModoExamen() {
 // `elegida` fijada).
 function RevisionPreguntas({ preguntas }) {
   return (
-    <div className="examen__revision">
+    <div className="flex flex-col gap-3">
       {preguntas.map((p, i) => (
-        <div key={i} className="examen__card examen__revisioncard">
-          <p className="examen__prompt">{p.termino}</p>
-          <div className="examen__opciones">
+        <div key={i} className={PANEL}>
+          <p className="mb-3 text-sm font-bold text-ink">{p.termino}</p>
+          <div className="flex flex-col gap-2">
             {p.opciones.map((op, idx) => {
-              let cls = 'examen__opcion examen__opcion--static';
-              if (idx === p.correcta) cls += ' is-correct';
-              else if (idx === p.elegida) cls += ' is-wrong';
+              const isCorrect = idx === p.correcta;
+              const isWrongPick = idx === p.elegida && idx !== p.correcta;
               return (
-                <div key={idx} className={cls}>
+                <div
+                  key={idx}
+                  className={
+                    'flex items-center justify-between gap-2 rounded-xl border px-4 py-2.5 text-sm leading-relaxed ' +
+                    (isCorrect
+                      ? 'border-[#2f9e44]/40 bg-[#2f9e44]/10 text-[#2f9e44]'
+                      : isWrongPick
+                        ? 'border-danger/40 bg-danger/10 text-danger'
+                        : 'border-border-strong text-ink-muted')
+                  }
+                >
                   {op}
-                  {idx === p.correcta && <Check width={14} height={14} />}
-                  {idx === p.elegida && idx !== p.correcta && <X width={14} height={14} />}
+                  {isCorrect && <Check width={14} height={14} className="shrink-0" />}
+                  {isWrongPick && <X width={14} height={14} className="shrink-0" />}
                 </div>
               );
             })}

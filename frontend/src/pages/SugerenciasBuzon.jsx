@@ -1,15 +1,25 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Library, Trash } from '../components/icons.jsx';
+import { ArrowLeft, Library, MessageCircle, Trash } from '../components/icons.jsx';
 import { timeAgo } from '../lib/fileType.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import * as api from '../api.js';
+
+const CARD =
+  'group relative overflow-hidden rounded-2xl border border-border bg-surface shadow-sm ' +
+  'transition-all duration-300 hover:-translate-y-1 hover:border-accent/30 hover:shadow-lift dark:hover:shadow-lift-dark';
 
 const CATEGORIAS = [
   { value: 'idea', label: 'Idea' },
   { value: 'error', label: 'Error' },
   { value: 'otro', label: 'Otro' },
 ];
+
+const CHIP_TONE = {
+  idea: 'bg-[var(--serene-weak)] text-[var(--serene)]',
+  error: 'bg-danger/10 text-danger',
+  otro: 'bg-surface-3 text-ink-muted',
+};
 
 // Buzón de sugerencias: bandeja de salida propia. El usuario escribe y ve lo
 // que ha enviado (sin estado de "revisado" — no existe un panel de soporte
@@ -101,7 +111,7 @@ export default function SugerenciasBuzon() {
           </div>
         </header>
 
-        <form onSubmit={handleSubmit} className="sugerencia__compose">
+        <form onSubmit={handleSubmit} className={CARD + ' flex flex-col gap-3 p-5'}>
           <div className="agenda__modetoggle">
             {CATEGORIAS.map((c) => (
               <button
@@ -125,14 +135,19 @@ export default function SugerenciasBuzon() {
             />
           </div>
           {sendError && <div className="modal__error">{sendError}</div>}
-          <div className="modal__actions" style={{ justifyContent: 'flex-start' }}>
-            <button type="submit" className="settings__btn settings__btn--accent" disabled={!mensaje.trim() || sending}>
+          <div>
+            <button
+              type="submit"
+              className="inline-flex items-center gap-2 rounded-xl bg-accent-gradient px-4 py-2.5 text-sm font-bold text-white shadow-[0_2px_10px_-2px_var(--accent-soft)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_18px_-4px_var(--accent-soft)] active:translate-y-0 disabled:opacity-60 disabled:hover:translate-y-0"
+              disabled={!mensaje.trim() || sending}
+            >
               {sending ? 'Enviando…' : 'Enviar sugerencia'}
             </button>
           </div>
         </form>
 
-        <h2 className="dash-section__title" style={{ marginTop: 28, marginBottom: 12 }}>
+        <h2 className="flex items-center gap-2 text-lg font-bold text-ink">
+          <MessageCircle width={17} height={17} className="text-accent" />
           Tus sugerencias enviadas
         </h2>
 
@@ -143,22 +158,29 @@ export default function SugerenciasBuzon() {
         )}
 
         {!loading && !error && items.length > 0 && (
-          <div className="sugerencia__list">
+          <div className="flex flex-col gap-3">
             {items.map((it) => {
               const cat = CATEGORIAS.find((c) => c.value === it.categoria) || CATEGORIAS[2];
               return (
-                <div key={it.id} className="sugerencia__item">
-                  <div className="sugerencia__itemhead">
-                    <span className={`sugerencia__chip sugerencia__chip--${it.categoria}`}>{cat.label}</span>
-                    <span className="settings__muted">{timeAgo(new Date(it.created_at))}</span>
+                <div key={it.id} className={CARD + ' flex flex-col gap-2.5 p-4'}>
+                  <div className="flex items-center gap-2.5">
+                    <span
+                      className={
+                        'shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ' +
+                        (CHIP_TONE[it.categoria] || CHIP_TONE.otro)
+                      }
+                    >
+                      {cat.label}
+                    </span>
+                    <span className="flex-1 text-xs text-ink-muted">{timeAgo(new Date(it.created_at))}</span>
                     <button
                       type="button"
-                      className="glosario__delete"
                       onClick={() => handleDelete(it.id)}
                       aria-label="Retirar sugerencia"
                       title="Retirar sugerencia"
+                      className="shrink-0 rounded-lg p-1.5 text-ink-soft transition-colors duration-150 hover:bg-danger/10 hover:text-danger"
                     >
-                      <Trash width={15} height={15} />
+                      <Trash width={14} height={14} />
                     </button>
                   </div>
                   <p className="sugerencia__msg">{it.mensaje}</p>
