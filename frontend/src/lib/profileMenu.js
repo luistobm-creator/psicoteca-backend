@@ -79,6 +79,7 @@ const BUILT_ROUTES = new Set([
   '/app/tarjetas-repaso',
   '/app/facturacion-consulta',
   '/app/consultorio/estadisticas',
+  '/app/consultorio/configurar',
 ]);
 
 // Rutas nuevas (no existentes aún) que deben caer en la página "Próximamente".

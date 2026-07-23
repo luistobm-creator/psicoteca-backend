@@ -404,3 +404,17 @@ export function createFacturacion(payload) {
 export function updateFacturacion(id, changes) {
   return request('PATCH', `/api/facturacion/${encodeURIComponent(id)}`, changes);
 }
+
+// ---------------------------------------------------------------------------
+// Configurar consultorio. Una sola fila por usuario (upsert).
+// ---------------------------------------------------------------------------
+
+/** Lee la configuración del consultorio (defaults razonables si aún no existe). */
+export function getConsultorioConfig() {
+  return request('GET', '/api/consultorio-config');
+}
+
+/** Guarda (crea o actualiza) la configuración del consultorio. */
+export function saveConsultorioConfig(payload) {
+  return request('PUT', '/api/consultorio-config', payload);
+}

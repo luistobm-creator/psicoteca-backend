@@ -33,6 +33,7 @@ from app.routers import (
     account,
     agenda,
     billing,
+    consultorio_config,
     examenes,
     facturacion,
     glosario,
@@ -107,6 +108,7 @@ app.include_router(notas_voz.router)
 app.include_router(tareas.router)
 app.include_router(examenes.router)
 app.include_router(facturacion.router)
+app.include_router(consultorio_config.router)
 
 
 # --- Endpoints utilitarios --------------------------------------------------

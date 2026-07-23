@@ -18,6 +18,7 @@ import TareasTerapeuticas from './pages/TareasTerapeuticas.jsx';
 import ModoExamen from './pages/ModoExamen.jsx';
 import TarjetasRepaso from './pages/TarjetasRepaso.jsx';
 import FacturacionPagos from './pages/FacturacionPagos.jsx';
+import ConfigurarConsultorio from './pages/ConfigurarConsultorio.jsx';
 import ComingSoon from './pages/ComingSoon.jsx';
 // Recharts (~400 KB) solo se necesita en esta página — se carga aparte, no en
 // el bundle principal, mismo criterio que PdfViewer.jsx con pdfjs-dist.
@@ -52,6 +53,7 @@ createRoot(document.getElementById('root')).render(
             <Route path="/app/modo-examen" element={<ModoExamen />} />
             <Route path="/app/tarjetas-repaso" element={<TarjetasRepaso />} />
             <Route path="/app/facturacion-consulta" element={<FacturacionPagos />} />
+            <Route path="/app/consultorio/configurar" element={<ConfigurarConsultorio />} />
             <Route
               path="/app/consultorio/estadisticas"
               element={
