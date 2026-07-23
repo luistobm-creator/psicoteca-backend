@@ -22,6 +22,7 @@ const SEARCH_MIN_CHARS = 3;
 const SEARCH_DEBOUNCE_MS = 300;
 const THEME_KEY = 'psicoteca-theme-v2';
 const RECENTS_KEY = 'psicoteca-recents-v1';
+const SIDEBAR_COLLAPSED_KEY = 'psicoteca-sidebar-collapsed-v1';
 const RECENTS_MAX = 6;
 
 // Recorre el árbol una vez y devuelve índices por id: el nodo y su padre.
@@ -50,6 +51,26 @@ export default function App() {
       /* almacenamiento no disponible */
     }
   }, [theme]);
+
+  // --- Sidebar colapsable (rail de iconos), preferencia persistida ---
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const toggleSidebarCollapsed = useCallback(() => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(next));
+      } catch {
+        /* almacenamiento no disponible */
+      }
+      return next;
+    });
+  }, []);
 
   // --- Sesión de usuario (estado global vía AuthContext) ---
   const { isAuthenticated, plan, loading: authLoading, refreshUser } = useAuth();
@@ -539,6 +560,7 @@ export default function App() {
         className="workspace"
         data-reader={readerOpen ? 'open' : 'closed'}
         data-nav={navOpen ? 'open' : 'closed'}
+        data-nav-collapsed={sidebarCollapsed ? 'true' : 'false'}
       >
         {navOpen && (
           <div
@@ -556,6 +578,8 @@ export default function App() {
           expanded={expanded}
           plan={plan}
           open={navOpen}
+          collapsed={sidebarCollapsed}
+          onToggleCollapsed={toggleSidebarCollapsed}
           showFavorites={isAuthenticated}
           favoritesActive={centerView === 'favorites'}
           favoritesCount={favoritesCount}

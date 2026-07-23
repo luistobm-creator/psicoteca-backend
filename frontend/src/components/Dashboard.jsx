@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Files, Users, ClipboardList, Brain, Check, Stethoscope, ArrowRight, LayoutGrid } from './icons.jsx';
 import { formatDate } from '../lib/fileType.js';
 import { dailyCounts } from '../lib/stats.js';
+import { useCountUp } from '../lib/useCountUp.js';
 import { categoryIcon } from '../lib/categoryIcons.jsx';
 import { Skeleton, SkeletonCollections } from './Skeleton.jsx';
 import { PROFILE_MENU } from '../lib/profileMenu.js';
@@ -11,19 +12,56 @@ import ActivityFeed from './ActivityFeed.jsx';
 import ProBadge from './ProBadge.jsx';
 import Sparkline from './Sparkline.jsx';
 
-function StatTile({ icon, value, label, loading, hint, spark, trend }) {
+const CARD =
+  'group relative overflow-hidden rounded-2xl border border-border bg-surface p-5 shadow-soft ' +
+  'transition-all duration-300 hover:-translate-y-1 hover:border-accent/30 hover:shadow-lift dark:hover:shadow-lift-dark';
+
+function StatTile({ icon, value, label, loading, hint, spark, trend, featured = false }) {
+  const numeric = typeof value === 'number' ? value : null;
+  const animated = useCountUp(numeric ?? 0);
+  const display = loading ? null : numeric != null ? animated.toLocaleString('es') : value;
+
   return (
-    <div className="stat">
-      <div className="stat__top">
-        <span className="stat__icon">{icon}</span>
+    <div
+      className={
+        CARD +
+        ' flex flex-col justify-between ' +
+        (featured ? 'sm:col-span-2 lg:col-span-2 lg:row-span-2 min-h-[220px]' : 'min-h-[140px]')
+      }
+    >
+      {/* halo decorativo, solo en la tarjeta destacada */}
+      {featured && (
+        <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-accent-gradient opacity-[0.08] blur-2xl" />
+      )}
+
+      <div className="flex items-start justify-between">
+        <span
+          className={
+            'flex items-center justify-center rounded-xl bg-accent-gradient text-white shadow-sm ' +
+            (featured ? 'h-12 w-12' : 'h-10 w-10')
+          }
+        >
+          {icon}
+        </span>
         {spark && <Sparkline data={spark} />}
       </div>
-      <div className="stat__value">
-        {loading ? <Skeleton className="skeleton--stat" /> : value}
+
+      <div className="mt-4">
+        <div
+          className={
+            'font-black tabular-nums leading-none text-ink ' + (featured ? 'text-5xl' : 'text-3xl')
+          }
+        >
+          {loading ? <Skeleton className="skeleton--stat" /> : display}
+        </div>
+        <div className={'mt-2 font-medium text-ink-muted ' + (featured ? 'text-sm' : 'text-xs')}>{label}</div>
+        {!loading && trend > 0 && (
+          <div className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-accent-weak px-2 py-0.5 text-xs font-semibold text-accent">
+            +{trend} esta semana
+          </div>
+        )}
+        {hint && !loading && <div className="mt-1.5 text-xs text-ink-soft">{hint}</div>}
       </div>
-      <div className="stat__label">{label}</div>
-      {!loading && trend > 0 && <div className="stat__trend">+{trend} esta semana</div>}
-      {hint && !loading && <div className="stat__hint">{hint}</div>}
     </div>
   );
 }
@@ -59,7 +97,6 @@ export default function Dashboard({
   onOpenFolder,
   onOpenFile,
 }) {
-  const fmt = (n) => (n == null ? '—' : Number(n).toLocaleString('es'));
   const isPro = plan === 'pro';
   // Free: el gancho de upgrade ya existente. Pro: no hace falta venderle
   // nada, así que ahí se aprovecha el mismo hint para la fecha de sync.
@@ -152,124 +189,146 @@ export default function Dashboard({
   }, [pacientesList, tareasList, glosarioList, examenesList]);
 
   return (
-    <div className="dashboard">
-      <section className="hero fade-in">
-        <span className="hero__eyebrow">Psicoteca</span>
-        <h1 className="hero__title">Tu sistema integral de psicología clínica y estudio</h1>
-        <p className="hero__subtitle">
-          Consultorio, agenda y estudio clínico en un solo lugar, con tu
-          biblioteca de referencia siempre a la mano.
-        </p>
+    <div className="dashboard flex flex-col gap-6">
+      {/* -------- Hero -------- */}
+      <section className="relative overflow-hidden rounded-2xl border border-border bg-surface px-7 py-9 shadow-soft animate-fade-up sm:px-10">
+        <div className="absolute inset-0 bg-mesh-light dark:bg-mesh-dark" aria-hidden="true" />
+        <div className="relative">
+          <span className="inline-block rounded-full bg-accent-weak px-3 py-1 text-xs font-bold uppercase tracking-wider text-accent">
+            Psicoteca
+          </span>
+          <h1 className="mt-4 max-w-2xl text-3xl font-black leading-tight tracking-tight text-ink sm:text-4xl">
+            Tu sistema integral de psicología clínica y estudio
+          </h1>
+          <p className="mt-3 max-w-xl text-sm text-ink-muted sm:text-base">
+            Consultorio, agenda y estudio clínico en un solo lugar, con tu biblioteca de referencia siempre a la
+            mano.
+          </p>
+        </div>
       </section>
 
-      <div className="stats fade-in">
+      {/* -------- Stats: bento asimétrico -------- */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 animate-fade-up">
         <StatTile
-          icon={<Users width={20} height={20} />}
-          value={fmt(pacientesCount)}
+          featured
+          icon={<Users width={22} height={22} />}
+          value={pacientesCount}
           label="Pacientes activos"
           loading={ecosystemLoading}
           spark={pacientesSpark}
           trend={sum(pacientesSpark)}
         />
         <StatTile
-          icon={<ClipboardList width={20} height={20} />}
-          value={fmt(tareasPendientesCount)}
+          icon={<ClipboardList width={18} height={18} />}
+          value={tareasPendientesCount}
           label="Tareas pendientes"
           loading={ecosystemLoading}
           spark={tareasSpark}
           trend={sum(tareasSpark)}
         />
         <StatTile
-          icon={<Brain width={20} height={20} />}
-          value={fmt(glosarioCount)}
+          icon={<Brain width={18} height={18} />}
+          value={glosarioCount}
           label="Términos en el Glosario"
           loading={ecosystemLoading}
           spark={glosarioSpark}
           trend={sum(glosarioSpark)}
         />
         <StatTile
-          icon={<Files width={20} height={20} />}
-          value={fmt(stats?.total_files)}
+          icon={<Files width={18} height={18} />}
+          value={stats?.total_files ?? null}
           label="Documentos"
           loading={statsLoading}
           hint={documentosHint}
         />
       </div>
 
-      <section className="dash-section fade-in">
-        <header className="dash-section__head">
-          <h2 className="dash-section__title">
-            <Stethoscope width={17} height={17} />
+      {/* -------- Módulos -------- */}
+      <section className="animate-fade-up">
+        <header className="mb-4 flex items-center justify-between">
+          <h2 className="flex items-center gap-2 text-lg font-bold text-ink">
+            <Stethoscope width={17} height={17} className="text-accent" />
             Tu consultorio y estudio
           </h2>
-          <span className="muted">{modules.length} herramientas</span>
+          <span className="text-sm text-ink-muted">{modules.length} herramientas</span>
         </header>
 
-        <div className="modules">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {modules.map((m) => (
-            <Link key={m.to} to={m.to} className="module">
-              <span className="module__icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+            <Link key={m.to} to={m.to} className={CARD + ' flex flex-col gap-3'}>
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent-gradient text-white shadow-sm transition-transform duration-300 group-hover:scale-110">
+                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d={m.iconPath} />
                 </svg>
               </span>
-              <span className="module__name">{m.label}</span>
-              <span className="module__desc">
+              <span className="text-sm font-bold text-ink">{m.label}</span>
+              <span className="flex items-center gap-1 text-xs text-ink-muted">
                 {m.desc}
-                <ArrowRight className="module__arrow" width={15} height={15} />
+                <ArrowRight
+                  width={13}
+                  height={13}
+                  className="ml-auto shrink-0 -translate-x-1 text-accent opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100"
+                />
               </span>
             </Link>
           ))}
         </div>
       </section>
 
-      <ActivityFeed events={activityEvents} loading={ecosystemLoading} />
+      <div className="animate-fade-up">
+        <ActivityFeed events={activityEvents} loading={ecosystemLoading} />
+      </div>
 
-      <QuickAccess
-        recents={recents}
-        topFolders={topFolders}
-        plan={plan}
-        onOpenFile={onOpenFile}
-        onOpenFolder={onOpenFolder}
-      />
+      <div className="animate-fade-up">
+        <QuickAccess
+          recents={recents}
+          topFolders={topFolders}
+          plan={plan}
+          onOpenFile={onOpenFile}
+          onOpenFolder={onOpenFolder}
+        />
+      </div>
 
-      <section className="dash-section fade-in">
-        <header className="dash-section__head">
-          <h2 className="dash-section__title">
-            <LayoutGrid width={17} height={17} />
+      {/* -------- Categorías -------- */}
+      <section className="animate-fade-up">
+        <header className="mb-4 flex items-center justify-between">
+          <h2 className="flex items-center gap-2 text-lg font-bold text-ink">
+            <LayoutGrid width={17} height={17} className="text-accent" />
             Categorías principales
           </h2>
-          {!treeLoading && (
-            <span className="muted">{topFolders.length} colecciones</span>
-          )}
+          {!treeLoading && <span className="text-sm text-ink-muted">{topFolders.length} colecciones</span>}
         </header>
 
         {treeLoading ? (
           <SkeletonCollections />
         ) : (
-          <div className="collections">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {topFolders.map((f) => {
               const premium = !!f.is_premium;
               return (
                 <button
                   key={f.id}
                   type="button"
-                  className="collection"
                   onClick={() => onOpenFolder(f)}
                   title={premium ? `${f.name} · Contenido Pro` : f.name}
+                  className={CARD + ' flex flex-col gap-3 text-left'}
                 >
-                  <span className="collection__top">
-                    <span className="collection__icon">
-                      {categoryIcon(f.name, 20)}
+                  <span className="flex items-center justify-between">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-2 text-accent transition-transform duration-300 group-hover:scale-110">
+                      {categoryIcon(f.name, 19)}
                     </span>
-                    {premium && <ProBadge plan={plan} className="collection__badge" />}
+                    {premium && <ProBadge plan={plan} />}
                   </span>
-                  <span className="collection__name">{f.name}</span>
-                  <span className="collection__meta">
+                  <span className="text-sm font-bold text-ink">{f.name}</span>
+                  <span className="flex items-center gap-1 text-xs text-ink-muted">
                     {f.child_count > 0
                       ? `${f.child_count} subcarpeta${f.child_count === 1 ? '' : 's'}`
                       : 'Ver documentos'}
-                    <ArrowRight className="collection__arrow" width={15} height={15} />
+                    <ArrowRight
+                      width={13}
+                      height={13}
+                      className="ml-auto shrink-0 -translate-x-1 text-accent opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100"
+                    />
                   </span>
                 </button>
               );
