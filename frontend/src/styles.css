@@ -4659,3 +4659,86 @@ a {
   margin-top: 1px;
   color: var(--pro-strong);
 }
+
+/* ============================================================
+   Logros y medallas (/app/logros)
+   ============================================================ */
+.logro__card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  opacity: 0.62;
+}
+.logro__card.is-unlocked {
+  opacity: 1;
+}
+.logro__icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--surface-3);
+  color: var(--text-soft);
+  margin-bottom: 4px;
+}
+.logro__card.is-unlocked .logro__icon {
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+}
+.logro__label {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--text);
+}
+.logro__desc {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  flex: 1 1 auto;
+}
+.logro__progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+.logro__progressbar {
+  flex: 1 1 auto;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.logro__progressfill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 999px;
+  transition: width 0.3s;
+}
+.logro__progresslabel {
+  flex: 0 0 auto;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.logro__badge {
+  align-self: flex-start;
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--text-muted);
+}
+.logro__badge.is-unlocked {
+  background: var(--accent-weak);
+  color: var(--accent);
+}

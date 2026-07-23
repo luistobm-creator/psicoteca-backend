@@ -25,6 +25,7 @@ import SugerenciasBuzon from './pages/SugerenciasBuzon.jsx';
 import Notificaciones from './pages/Notificaciones.jsx';
 import ReferirColegas from './pages/ReferirColegas.jsx';
 import ConsentimientoFirma from './pages/ConsentimientoFirma.jsx';
+import LogrosMedallas from './pages/LogrosMedallas.jsx';
 import ComingSoon from './pages/ComingSoon.jsx';
 // Recharts (~400 KB) solo se necesita en estas páginas — se carga aparte, no
 // en el bundle principal, mismo criterio que PdfViewer.jsx con pdfjs-dist.
@@ -68,6 +69,7 @@ createRoot(document.getElementById('root')).render(
             <Route path="/app/notificaciones" element={<Notificaciones />} />
             <Route path="/app/referidos" element={<ReferirColegas />} />
             <Route path="/app/consentimiento" element={<ConsentimientoFirma />} />
+            <Route path="/app/logros" element={<LogrosMedallas />} />
             <Route
               path="/app/consultorio/estadisticas"
               element={
