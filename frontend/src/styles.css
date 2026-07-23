@@ -4553,3 +4553,62 @@ a {
   background: var(--surface-3);
   color: var(--text-muted);
 }
+
+/* ============================================================
+   Notificaciones (/app/notificaciones)
+   ============================================================ */
+.notif__list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.notif__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+}
+.notif__rowbody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* Interruptor tipo iOS: <button role="switch"> con un thumb que se desliza. */
+.toggle {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 26px;
+  padding: 3px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-3);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.toggle.is-on {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.toggle:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.toggle__thumb {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s;
+}
+.toggle.is-on .toggle__thumb {
+  transform: translateX(18px);
+}

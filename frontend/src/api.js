@@ -486,3 +486,14 @@ export function createSugerencia(payload) {
 export function deleteSugerencia(id) {
   return request('DELETE', `/api/sugerencias/${encodeURIComponent(id)}`);
 }
+
+// ---------------------------------------------------------------------------
+// Notificaciones: preferencias de aviso (una fila por usuario, upsert).
+// ---------------------------------------------------------------------------
+
+export function getNotificaciones() {
+  return request('GET', '/api/notificaciones');
+}
+export function saveNotificaciones(payload) {
+  return request('PUT', '/api/notificaciones', payload);
+}

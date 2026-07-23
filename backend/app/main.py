@@ -40,6 +40,7 @@ from app.routers import (
     glosario,
     items,
     notas_voz,
+    notificaciones,
     pacientes,
     plantillas,
     playlists,
@@ -115,6 +116,7 @@ app.include_router(consultorio_config.router)
 app.include_router(plantillas.router)
 app.include_router(actividad_biblioteca.router)
 app.include_router(sugerencias.router)
+app.include_router(notificaciones.router)
 
 
 # --- Endpoints utilitarios --------------------------------------------------
