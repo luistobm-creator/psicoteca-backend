@@ -1,10 +1,33 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
-import { ArrowLeft, Library } from '../components/icons.jsx';
+import { ArrowLeft, CalendarCheck, DollarSign, Library, Users } from '../components/icons.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useCountUp } from '../lib/useCountUp.js';
 import Gauge from '../components/Gauge.jsx';
 import * as api from '../api.js';
+
+const CARD =
+  'group relative overflow-hidden rounded-2xl border border-border bg-surface shadow-sm ' +
+  'transition-all duration-300 hover:-translate-y-1 hover:border-accent/30 hover:shadow-lift dark:hover:shadow-lift-dark';
+
+function MiniStat({ icon, value, display, label, hint }) {
+  const animated = useCountUp(typeof value === 'number' ? value : 0);
+  return (
+    <div className={CARD + ' flex flex-col gap-3 p-4'}>
+      <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent-gradient text-white shadow-sm">
+        {icon}
+      </span>
+      <div>
+        <div className="text-2xl font-black leading-none tabular-nums text-ink">
+          {display != null ? display : animated}
+        </div>
+        <div className="mt-1.5 text-xs font-medium text-ink-muted">{label}</div>
+        {hint && <div className="mt-1 text-[11px] font-semibold text-accent">{hint}</div>}
+      </div>
+    </div>
+  );
+}
 
 const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
@@ -128,29 +151,35 @@ export default function EstadisticasConsultorio() {
 
         {!loading && data && (
           <>
-            <div className="stats fade-in">
-              <div className="stat">
-                <div className="stat__value">{ingresosEsteMes == null ? '—' : formatMonto(ingresosEsteMes)}</div>
-                <div className="stat__label">Ingresos este mes</div>
-                {!tieneFacturacion && <div className="stat__hint">{data.errors.facturacion || 'No disponible'}</div>}
-              </div>
-              <div className="stat">
-                <div className="stat__value">{asistencia == null ? '—' : `${asistencia}%`}</div>
-                <div className="stat__label">Índice de asistencia</div>
-                {tieneAgenda && asistencia == null && (
-                  <div className="stat__hint">Marca asistencia en tu Agenda para calcularlo</div>
-                )}
-                {!tieneAgenda && <div className="stat__hint">{data.errors.agenda || 'No disponible'}</div>}
-              </div>
-              <div className="stat">
-                <div className="stat__value">{retencion == null ? '—' : `${retencion}%`}</div>
-                <div className="stat__label">Retención de pacientes</div>
-                {(tieneAgenda && tienePacientes) ? (
-                  <div className="stat__hint">Con cita en los últimos 60 días</div>
-                ) : (
-                  <div className="stat__hint">{data.errors.agenda || data.errors.pacientes || 'No disponible'}</div>
-                )}
-              </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <MiniStat
+                icon={<DollarSign width={18} height={18} />}
+                display={ingresosEsteMes == null ? '—' : formatMonto(ingresosEsteMes)}
+                label="Ingresos este mes"
+                hint={!tieneFacturacion ? data.errors.facturacion || 'No disponible' : null}
+              />
+              <MiniStat
+                icon={<CalendarCheck width={18} height={18} />}
+                display={asistencia == null ? '—' : `${asistencia}%`}
+                label="Índice de asistencia"
+                hint={
+                  tieneAgenda && asistencia == null
+                    ? 'Marca asistencia en tu Agenda para calcularlo'
+                    : !tieneAgenda
+                      ? data.errors.agenda || 'No disponible'
+                      : null
+                }
+              />
+              <MiniStat
+                icon={<Users width={18} height={18} />}
+                display={retencion == null ? '—' : `${retencion}%`}
+                label="Retención de pacientes"
+                hint={
+                  tieneAgenda && tienePacientes
+                    ? 'Con cita en los últimos 60 días'
+                    : data.errors.agenda || data.errors.pacientes || 'No disponible'
+                }
+              />
             </div>
 
             <section className="dash-section fade-in">

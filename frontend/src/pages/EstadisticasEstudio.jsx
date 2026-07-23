@@ -1,11 +1,34 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
-import { ArrowLeft, Library } from '../components/icons.jsx';
+import { ArrowLeft, BookOpen, Brain, GraduationCap, Library, TrendingUp } from '../components/icons.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useCountUp } from '../lib/useCountUp.js';
 import Gauge from '../components/Gauge.jsx';
 import { dailyCounts } from '../lib/stats.js';
 import * as api from '../api.js';
+
+const CARD =
+  'group relative overflow-hidden rounded-2xl border border-border bg-surface shadow-sm ' +
+  'transition-all duration-300 hover:-translate-y-1 hover:border-accent/30 hover:shadow-lift dark:hover:shadow-lift-dark';
+
+function MiniStat({ icon, value, display, label, hint }) {
+  const animated = useCountUp(typeof value === 'number' ? value : 0);
+  return (
+    <div className={CARD + ' flex flex-col gap-3 p-4'}>
+      <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent-gradient text-white shadow-sm">
+        {icon}
+      </span>
+      <div>
+        <div className="text-2xl font-black leading-none tabular-nums text-ink">
+          {display != null ? display : animated}
+        </div>
+        <div className="mt-1.5 text-xs font-medium text-ink-muted">{label}</div>
+        {hint && <div className="mt-1 text-[11px] font-semibold text-accent">{hint}</div>}
+      </div>
+    </div>
+  );
+}
 
 const DIAS_CORTOS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
 
@@ -116,29 +139,34 @@ export default function EstadisticasEstudio() {
 
         {!loading && data && (
           <>
-            <div className="stats fade-in">
-              <div className="stat">
-                <div className="stat__value">{tieneExamenes ? data.examenes.length : '—'}</div>
-                <div className="stat__label">Exámenes realizados</div>
-                {!tieneExamenes && <div className="stat__hint">{data.errors.examenes || 'No disponible'}</div>}
-              </div>
-              <div className="stat">
-                <div className="stat__value">{promedioGeneral == null ? '—' : `${promedioGeneral}%`}</div>
-                <div className="stat__label">Promedio general</div>
-                {tieneExamenes && promedioGeneral == null && (
-                  <div className="stat__hint">Realiza un examen para calcularlo</div>
-                )}
-              </div>
-              <div className="stat">
-                <div className="stat__value">{tieneGlosario ? data.glosario.length : '—'}</div>
-                <div className="stat__label">Términos en el glosario</div>
-                {!tieneGlosario && <div className="stat__hint">{data.errors.glosario || 'No disponible'}</div>}
-              </div>
-              <div className="stat">
-                <div className="stat__value">{tieneLectura ? data.lectura.length : '—'}</div>
-                <div className="stat__label">Documentos leídos</div>
-                {!tieneLectura && <div className="stat__hint">{data.errors.lectura || 'No disponible'}</div>}
-              </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <MiniStat
+                icon={<GraduationCap width={18} height={18} />}
+                value={tieneExamenes ? data.examenes.length : null}
+                display={!tieneExamenes ? '—' : undefined}
+                label="Exámenes realizados"
+                hint={!tieneExamenes ? data.errors.examenes || 'No disponible' : null}
+              />
+              <MiniStat
+                icon={<TrendingUp width={18} height={18} />}
+                display={promedioGeneral == null ? '—' : `${promedioGeneral}%`}
+                label="Promedio general"
+                hint={tieneExamenes && promedioGeneral == null ? 'Realiza un examen para calcularlo' : null}
+              />
+              <MiniStat
+                icon={<Brain width={18} height={18} />}
+                value={tieneGlosario ? data.glosario.length : null}
+                display={!tieneGlosario ? '—' : undefined}
+                label="Términos en el glosario"
+                hint={!tieneGlosario ? data.errors.glosario || 'No disponible' : null}
+              />
+              <MiniStat
+                icon={<BookOpen width={18} height={18} />}
+                value={tieneLectura ? data.lectura.length : null}
+                display={!tieneLectura ? '—' : undefined}
+                label="Documentos leídos"
+                hint={!tieneLectura ? data.errors.lectura || 'No disponible' : null}
+              />
             </div>
 
             <section className="dash-section fade-in">
