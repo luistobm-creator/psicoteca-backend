@@ -1,8 +1,30 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bell, Library, Plus, X } from '../components/icons.jsx';
+import { ArrowLeft, Bell, CalendarCheck, Clock, Library, Plus, Users, X } from '../components/icons.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useCountUp } from '../lib/useCountUp.js';
 import * as api from '../api.js';
+
+const CARD =
+  'group relative overflow-hidden rounded-2xl border border-border bg-surface shadow-sm ' +
+  'transition-all duration-300 hover:-translate-y-1 hover:border-accent/30 hover:shadow-lift dark:hover:shadow-lift-dark';
+
+function MiniStat({ icon, value, label, featured = false }) {
+  const animated = useCountUp(typeof value === 'number' ? value : 0);
+  return (
+    <div className={CARD + ' flex items-center gap-3 p-4' + (featured ? ' sm:col-span-2' : '')}>
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-gradient text-white shadow-sm">
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <div className="text-2xl font-black leading-none tabular-nums text-ink">
+          {value == null ? '—' : animated}
+        </div>
+        <div className="mt-1 text-xs font-medium text-ink-muted">{label}</div>
+      </div>
+    </div>
+  );
+}
 
 const SESSION_TYPES = ['Individual', 'Pareja', 'Familiar', 'Evaluación', 'Seguimiento'];
 
@@ -100,6 +122,15 @@ export default function AgendaDeCitas() {
     [citas, selected]
   );
 
+  // Mini-stats de la semana visible: derivadas de `citas` (ya cargado para
+  // el rango de 7 días), sin llamadas nuevas. weekISO[0] es siempre "hoy".
+  const citasHoy = useMemo(() => citas.filter((c) => c.fecha === weekISO[0]).length, [citas, weekISO]);
+  const asistenciaPct = useMemo(() => {
+    const marcadas = citas.filter((c) => c.asistio != null);
+    if (marcadas.length === 0) return null;
+    return Math.round((marcadas.filter((c) => c.asistio === true).length / marcadas.length) * 100);
+  }, [citas]);
+
   const patch = async (id, changes) => {
     const prev = citas;
     setCitas((cur) => cur.map((c) => (c.id === id ? { ...c, ...changes } : c)));
@@ -118,9 +149,15 @@ export default function AgendaDeCitas() {
 
   if (authLoading || !isAuthenticated) return null;
 
+  const chipBase =
+    'inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-ink-muted transition-colors duration-150';
+  const chipBtn = chipBase + ' hover:border-accent/40 hover:text-accent cursor-pointer';
+  const chipOn = 'border-transparent bg-accent-weak text-accent hover:border-transparent hover:text-accent';
+  const chipDanger = 'border-transparent bg-danger/10 text-danger hover:border-transparent hover:text-danger';
+
   return (
     <div className="settings">
-      <div className="settings__panel fade-in">
+      <div className="settings__panel fade-in max-w-[860px]">
         <div className="settings__topbar">
           <Link to="/app" className="settings__brand" title="Ir a la biblioteca">
             <span className="settings__logo">
@@ -134,100 +171,120 @@ export default function AgendaDeCitas() {
           </Link>
         </div>
 
-        <header className="settings__head agenda__head">
+        <header className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="settings__title">Agenda de citas</h1>
             <p className="settings__subtitle">Tus próximas sesiones, día por día.</p>
           </div>
-          <button type="button" className="glosario__addbtn" onClick={() => setShowNew(true)}>
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded-xl bg-accent-gradient px-4 py-2.5 text-sm font-bold text-white shadow-[0_2px_10px_-2px_var(--accent-soft)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_18px_-4px_var(--accent-soft)] active:translate-y-0"
+            onClick={() => setShowNew(true)}
+          >
             <Plus width={16} height={16} />
             Nueva cita
           </button>
         </header>
 
-        <div className="agenda__week">
+        {/* -------- Mini-stats de la semana (bento) -------- */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <MiniStat icon={<CalendarCheck width={19} height={19} />} value={citasHoy} label="Citas hoy" featured />
+          <MiniStat icon={<Users width={18} height={18} />} value={citas.length} label="Esta semana" />
+          <MiniStat
+            icon={<Clock width={18} height={18} />}
+            value={asistenciaPct == null ? null : asistenciaPct}
+            label={asistenciaPct == null ? 'Sin asistencia marcada' : 'Asistencia'}
+          />
+        </div>
+
+        {/* -------- Selector de día -------- */}
+        <div className="flex gap-2 overflow-x-auto pb-1">
           {week.map((d, i) => {
             const iso = weekISO[i];
+            const isSelected = iso === selected;
             return (
               <button
                 key={iso}
                 type="button"
-                className={'agenda__day' + (iso === selected ? ' is-selected' : '')}
                 onClick={() => setSelected(iso)}
+                className={
+                  'flex min-w-[64px] flex-1 flex-col items-center gap-1 rounded-xl border px-2 py-3 transition-all duration-200 ' +
+                  (isSelected
+                    ? 'border-transparent bg-accent-gradient text-white shadow-md'
+                    : 'border-border bg-surface text-ink hover:-translate-y-0.5 hover:border-accent/30 hover:shadow-sm')
+                }
               >
-                <span className="agenda__dayname">{dayLabel(d)}</span>
-                <span className="agenda__daynum">{d.getDate()}</span>
-                <span className={'agenda__daydot' + (dayHasCitas(iso) ? ' is-visible' : '')} />
+                <span className={'text-[11px] font-bold uppercase tracking-wide ' + (isSelected ? 'text-white/80' : 'text-ink-muted')}>
+                  {dayLabel(d)}
+                </span>
+                <span className="text-lg font-black leading-none">{d.getDate()}</span>
+                <span
+                  className={
+                    'h-1.5 w-1.5 rounded-full transition-opacity ' +
+                    (dayHasCitas(iso) ? 'opacity-100' : 'opacity-0') +
+                    ' ' +
+                    (isSelected ? 'bg-white' : 'bg-accent')
+                  }
+                />
               </button>
             );
           })}
         </div>
 
-        <p className="settings__subtitle agenda__selectedlabel">{formatLong(selected)}</p>
+        <p className="settings__subtitle -mt-1">{formatLong(selected)}</p>
 
         {loading && <p className="settings__muted">Cargando…</p>}
         {!loading && error && <p className="settings__error">{error}</p>}
         {!loading && !error && dayCitas.length === 0 && (
-          <div className="agenda__empty">
-            <p className="settings__title" style={{ fontSize: 16 }}>
-              Día libre
-            </p>
-            <p className="settings__muted">No tienes citas programadas.</p>
+          <div className="rounded-2xl border border-dashed border-border bg-surface-2/40 px-6 py-12 text-center">
+            <p className="text-base font-bold text-ink">Día libre</p>
+            <p className="mt-1 text-sm text-ink-muted">No tienes citas programadas.</p>
           </div>
         )}
 
-        {!loading &&
-          !error &&
-          dayCitas.map((c) => (
-            <article key={c.id} className="agenda__card">
-              <div className="agenda__time">
-                <span className="agenda__hour">{c.hora.slice(0, 5)}</span>
-                <span className="agenda__dur">{c.duracion_minutos} min</span>
-              </div>
-              <div className="agenda__bar" />
-              <div className="agenda__body">
-                <div className="agenda__patient">{c.paciente_nombre}</div>
-                {c.tipo_sesion && <div className="settings__muted">{c.tipo_sesion}</div>}
-                <div className="agenda__chips">
-                  <span className="agenda__chip">
-                    {c.modalidad === 'en_linea' ? 'En línea' : 'Presencial'}
-                  </span>
-                  <button
-                    type="button"
-                    className={'agenda__chip agenda__chip--btn' + (c.recordatorio ? ' is-on' : '')}
-                    onClick={() => patch(c.id, { recordatorio: !c.recordatorio })}
-                  >
-                    <Bell width={12} height={12} />
-                    {c.recordatorio ? 'Recordatorio activo' : 'Recordatorio apagado'}
-                  </button>
-                  <button
-                    type="button"
-                    className={
-                      'agenda__chip agenda__chip--btn' +
-                      (c.asistio === true ? ' is-on' : c.asistio === false ? ' agenda__chip--danger' : '')
-                    }
-                    onClick={() => patch(c.id, { asistio: nextAsistio(c.asistio) })}
-                  >
-                    {asistioLabel(c.asistio)}
-                  </button>
-                  <button
-                    type="button"
-                    className="agenda__chip agenda__chip--btn"
-                    onClick={() => setReschedTarget(c)}
-                  >
-                    Reprogramar
-                  </button>
-                  <button
-                    type="button"
-                    className="agenda__chip agenda__chip--btn agenda__chip--danger"
-                    onClick={() => handleCancel(c)}
-                  >
-                    Cancelar
-                  </button>
+        <div className="flex flex-col gap-3">
+          {!loading &&
+            !error &&
+            dayCitas.map((c) => (
+              <article key={c.id} className={CARD + ' flex gap-4 p-4'}>
+                <div className="flex min-w-[76px] shrink-0 flex-col items-center justify-center rounded-xl bg-accent-gradient px-3 py-2 text-white shadow-sm">
+                  <span className="text-lg font-black leading-none tabular-nums">{c.hora.slice(0, 5)}</span>
+                  <span className="mt-1 text-[10.5px] font-semibold opacity-80">{c.duracion_minutos} min</span>
                 </div>
-              </div>
-            </article>
-          ))}
+                <div className="min-w-0 flex-1">
+                  <div className="font-bold text-ink">{c.paciente_nombre}</div>
+                  {c.tipo_sesion && <div className="text-xs text-ink-muted">{c.tipo_sesion}</div>}
+                  <div className="mt-2.5 flex flex-wrap gap-1.5">
+                    <span className={chipBase}>{c.modalidad === 'en_linea' ? 'En línea' : 'Presencial'}</span>
+                    <button
+                      type="button"
+                      className={chipBtn + (c.recordatorio ? ' ' + chipOn : '')}
+                      onClick={() => patch(c.id, { recordatorio: !c.recordatorio })}
+                    >
+                      <Bell width={12} height={12} />
+                      {c.recordatorio ? 'Recordatorio activo' : 'Recordatorio apagado'}
+                    </button>
+                    <button
+                      type="button"
+                      className={
+                        chipBtn +
+                        (c.asistio === true ? ' ' + chipOn : c.asistio === false ? ' ' + chipDanger : '')
+                      }
+                      onClick={() => patch(c.id, { asistio: nextAsistio(c.asistio) })}
+                    >
+                      {asistioLabel(c.asistio)}
+                    </button>
+                    <button type="button" className={chipBtn} onClick={() => setReschedTarget(c)}>
+                      Reprogramar
+                    </button>
+                    <button type="button" className={chipBtn + ' ' + chipDanger} onClick={() => handleCancel(c)}>
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ))}
+        </div>
       </div>
 
       {showNew && (
