@@ -1,8 +1,34 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Library, Plus, X } from '../components/icons.jsx';
+import { AlertTriangle, ArrowLeft, DollarSign, Library, Plus, TrendingUp, X } from '../components/icons.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useCountUp } from '../lib/useCountUp.js';
 import * as api from '../api.js';
+
+const CARD =
+  'group relative overflow-hidden rounded-2xl border border-border bg-surface shadow-sm ' +
+  'transition-all duration-300 hover:-translate-y-1 hover:border-accent/30 hover:shadow-lift dark:hover:shadow-lift-dark';
+
+function MoneyStat({ icon, value, label, featured = false, tone = 'accent' }) {
+  const animated = useCountUp(Math.round(value));
+  const toneClasses =
+    tone === 'danger'
+      ? 'bg-danger/10 text-danger'
+      : 'bg-accent-gradient text-white';
+  return (
+    <div className={CARD + ' flex flex-col gap-3 p-4' + (featured ? ' sm:col-span-2' : '')}>
+      <span className={'flex h-11 w-11 items-center justify-center rounded-xl shadow-sm ' + toneClasses}>
+        {icon}
+      </span>
+      <div>
+        <div className={'font-black leading-none tabular-nums text-ink ' + (featured ? 'text-4xl' : 'text-2xl')}>
+          ${animated.toLocaleString('es-MX')}
+        </div>
+        <div className="mt-1.5 text-xs font-medium text-ink-muted">{label}</div>
+      </div>
+    </div>
+  );
+}
 
 function pad(n) {
   return String(n).padStart(2, '0');
@@ -63,6 +89,14 @@ export default function FacturacionPagos() {
     () => cobros.filter((c) => c.estado === 'pendiente').reduce((sum, c) => sum + Number(c.monto), 0),
     [cobros]
   );
+  // Mini-stats adicionales, derivadas de `cobros` (ya cargado) sin llamadas nuevas.
+  const totalPagadoMes = useMemo(() => {
+    const [y, m] = hoy.split('-');
+    return cobros
+      .filter((c) => c.estado === 'pagado' && c.fecha.slice(0, 4) === y && c.fecha.slice(5, 7) === m)
+      .reduce((sum, c) => sum + Number(c.monto), 0);
+  }, [cobros, hoy]);
+  const vencidosCount = useMemo(() => cobros.filter((c) => isVencido(c)).length, [cobros, hoy]);
 
   const patch = async (id, changes) => {
     const prev = cobros;
@@ -84,9 +118,14 @@ export default function FacturacionPagos() {
 
   if (authLoading || !isAuthenticated) return null;
 
+  const chipBase =
+    'inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-ink-muted transition-colors duration-150';
+  const chipBtn = chipBase + ' hover:border-accent/40 hover:text-accent cursor-pointer';
+  const chipDanger = 'border-transparent bg-danger/10 text-danger hover:border-transparent hover:text-danger';
+
   return (
     <div className="settings">
-      <div className="settings__panel fade-in">
+      <div className="settings__panel fade-in max-w-[860px]">
         <div className="settings__topbar">
           <Link to="/app" className="settings__brand" title="Ir a la biblioteca">
             <span className="settings__logo">
@@ -100,18 +139,40 @@ export default function FacturacionPagos() {
           </Link>
         </div>
 
-        <header className="settings__head agenda__head">
+        <header className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="settings__title">Facturación y pagos</h1>
-            <p className="settings__subtitle">
-              {formatMonto(totalPendiente)} pendiente de cobro
-            </p>
+            <p className="settings__subtitle">Cobros, deudores y pagos de tu consultorio.</p>
           </div>
-          <button type="button" className="glosario__addbtn" onClick={() => setShowNew(true)}>
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded-xl bg-accent-gradient px-4 py-2.5 text-sm font-bold text-white shadow-[0_2px_10px_-2px_var(--accent-soft)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_18px_-4px_var(--accent-soft)] active:translate-y-0"
+            onClick={() => setShowNew(true)}
+          >
             <Plus width={16} height={16} />
             Nuevo cobro
           </button>
         </header>
+
+        {/* -------- Mini-stats (bento) -------- */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <MoneyStat
+            featured
+            icon={<DollarSign width={20} height={20} />}
+            value={totalPendiente}
+            label="Pendiente de cobro"
+          />
+          <MoneyStat icon={<TrendingUp width={18} height={18} />} value={totalPagadoMes} label="Cobrado este mes" />
+          <div className={CARD + ' flex items-center gap-3 p-4'}>
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-danger/10 text-danger shadow-sm">
+              <AlertTriangle width={18} height={18} />
+            </span>
+            <div>
+              <div className="text-2xl font-black leading-none tabular-nums text-ink">{vencidosCount}</div>
+              <div className="mt-1 text-xs font-medium text-ink-muted">Vencidos</div>
+            </div>
+          </div>
+        </div>
 
         <div className="agenda__modetoggle">
           <button type="button" className={tab === 'pendiente' ? 'is-active' : ''} onClick={() => setTab('pendiente')}>
@@ -125,61 +186,56 @@ export default function FacturacionPagos() {
         {loading && <p className="settings__muted">Cargando…</p>}
         {!loading && error && <p className="settings__error">{error}</p>}
         {!loading && !error && visibles.length === 0 && (
-          <div className="agenda__empty">
-            <p className="settings__title" style={{ fontSize: 16 }}>
-              {tab === 'pendiente' ? 'Sin pendientes' : 'Sin pagos registrados'}
-            </p>
-            <p className="settings__muted">
+          <div className="rounded-2xl border border-dashed border-border bg-surface-2/40 px-6 py-12 text-center">
+            <p className="text-base font-bold text-ink">{tab === 'pendiente' ? 'Sin pendientes' : 'Sin pagos registrados'}</p>
+            <p className="mt-1 text-sm text-ink-muted">
               {tab === 'pendiente' ? 'No tienes cobros pendientes — no hay deudores.' : 'Aún no registras ningún pago.'}
             </p>
           </div>
         )}
 
-        {!loading &&
-          !error &&
-          visibles.map((c) => (
-            <article key={c.id} className="agenda__card">
-              <div className="agenda__bar" />
-              <div className="agenda__body">
-                <div className="agenda__patient">{c.paciente_nombre}</div>
-                <div className="settings__muted">{c.concepto || 'Sin concepto'}</div>
-                <div className="agenda__chips">
-                  <span className="agenda__chip" style={{ fontWeight: 700 }}>
-                    {formatMonto(c.monto)}
-                  </span>
-                  <span className={'agenda__chip' + (isVencido(c) ? ' agenda__chip--danger' : '')}>
-                    {isVencido(c) ? 'Vencido · ' : ''}
-                    {formatFecha(c.fecha)}
-                  </span>
-                  {c.estado === 'pendiente' && (
-                    <button
-                      type="button"
-                      className="agenda__chip agenda__chip--btn"
-                      onClick={() => patch(c.id, { estado: 'pagado' })}
-                    >
-                      Marcar pagado
-                    </button>
-                  )}
-                  {c.estado === 'pagado' && (
-                    <button
-                      type="button"
-                      className="agenda__chip agenda__chip--btn"
-                      onClick={() => patch(c.id, { estado: 'pendiente' })}
-                    >
-                      Reabrir
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    className="agenda__chip agenda__chip--btn agenda__chip--danger"
-                    onClick={() => handleAnular(c)}
+        <div className="flex flex-col gap-3">
+          {!loading &&
+            !error &&
+            visibles.map((c) => {
+              const vencido = isVencido(c);
+              return (
+                <article key={c.id} className={CARD + ' flex gap-4 p-4'}>
+                  <div
+                    className={
+                      'flex min-w-[100px] shrink-0 flex-col items-center justify-center rounded-xl px-3 py-2 shadow-sm ' +
+                      (vencido ? 'bg-danger/10 text-danger' : 'bg-accent-gradient text-white')
+                    }
                   >
-                    Anular
-                  </button>
-                </div>
-              </div>
-            </article>
-          ))}
+                    <span className="text-xl font-black leading-none tabular-nums">{formatMonto(c.monto)}</span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-bold text-ink">{c.paciente_nombre}</div>
+                    <div className="text-xs text-ink-muted">{c.concepto || 'Sin concepto'}</div>
+                    <div className="mt-2.5 flex flex-wrap gap-1.5">
+                      <span className={chipBase + (vencido ? ' border-transparent bg-danger/10 text-danger' : '')}>
+                        {vencido ? 'Vencido · ' : ''}
+                        {formatFecha(c.fecha)}
+                      </span>
+                      {c.estado === 'pendiente' && (
+                        <button type="button" className={chipBtn} onClick={() => patch(c.id, { estado: 'pagado' })}>
+                          Marcar pagado
+                        </button>
+                      )}
+                      {c.estado === 'pagado' && (
+                        <button type="button" className={chipBtn} onClick={() => patch(c.id, { estado: 'pendiente' })}>
+                          Reabrir
+                        </button>
+                      )}
+                      <button type="button" className={chipBtn + ' ' + chipDanger} onClick={() => handleAnular(c)}>
+                        Anular
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+        </div>
       </div>
 
       {showNew && (

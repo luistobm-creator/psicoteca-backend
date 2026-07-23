@@ -550,3 +550,23 @@ export function UserPlus(props) {
     </svg>
   );
 }
+
+// Mismo trazo "$" que ya usa PROFILE_MENU para "Facturación de consulta" —
+// se reexpone como componente para no duplicar el path a mano en la página.
+export function DollarSign(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M12 1v22" />
+      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+    </svg>
+  );
+}
+
+export function TrendingUp(props) {
+  return (
+    <svg {...base} {...props}>
+      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+      <polyline points="17 6 23 6 23 12" />
+    </svg>
+  );
+}
