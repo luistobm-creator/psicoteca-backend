@@ -508,3 +508,66 @@ export function getConsentimientos(pacienteId) {
 export function createConsentimiento(payload) {
   return request('POST', '/api/consentimientos', payload);
 }
+
+// ---------------------------------------------------------------------------
+// Comunidad: perfiles públicos (opt-in) + ranking + grupos de estudio +
+// mensajes directos. Las únicas tablas de toda la app con datos visibles
+// entre usuarios distintos — ver script_comunidad_supabase.sql.
+// ---------------------------------------------------------------------------
+
+// -- Perfil propio + ranking --
+export function getMiPerfilComunidad() {
+  return request('GET', '/api/comunidad/perfil');
+}
+export function saveMiPerfilComunidad(payload) {
+  return request('PUT', '/api/comunidad/perfil', payload);
+}
+export function actualizarPuntosComunidad() {
+  return request('POST', '/api/comunidad/actualizar-puntos');
+}
+export function getDirectorioComunidad() {
+  return request('GET', '/api/comunidad/directorio');
+}
+export function getRankingComunidad() {
+  return request('GET', '/api/comunidad/ranking');
+}
+export function getPerfilPublico(userId) {
+  return request('GET', `/api/comunidad/perfiles/${encodeURIComponent(userId)}`);
+}
+
+// -- Grupos de estudio --
+export function getGrupos() {
+  return request('GET', '/api/comunidad/grupos');
+}
+export function getMisMembresias() {
+  return request('GET', '/api/comunidad/grupos/mis-membresias');
+}
+export function crearGrupo(payload) {
+  return request('POST', '/api/comunidad/grupos', payload);
+}
+export function unirseAGrupo(grupoId) {
+  return request('POST', `/api/comunidad/grupos/${encodeURIComponent(grupoId)}/unirse`);
+}
+export function salirDeGrupo(grupoId) {
+  return request('DELETE', `/api/comunidad/grupos/${encodeURIComponent(grupoId)}/salir`);
+}
+export function getMensajesGrupo(grupoId) {
+  return request('GET', `/api/comunidad/grupos/${encodeURIComponent(grupoId)}/mensajes`);
+}
+export function enviarMensajeGrupo(grupoId, contenido) {
+  return request('POST', `/api/comunidad/grupos/${encodeURIComponent(grupoId)}/mensajes`, { contenido });
+}
+
+// -- Mensajes directos --
+export function getMensajesDirectos() {
+  return request('GET', '/api/comunidad/mensajes');
+}
+export function getHiloMensajes(otroUserId) {
+  return request('GET', `/api/comunidad/mensajes/${encodeURIComponent(otroUserId)}`);
+}
+export function enviarMensajeDirecto(destinatarioId, contenido) {
+  return request('POST', '/api/comunidad/mensajes', { destinatario_id: destinatarioId, contenido });
+}
+export function marcarMensajeLeido(mensajeId) {
+  return request('PATCH', `/api/comunidad/mensajes/${encodeURIComponent(mensajeId)}`, { leido: true });
+}
