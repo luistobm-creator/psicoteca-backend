@@ -679,6 +679,21 @@ a {
   grid-template-columns: var(--sidebar-w) clamp(300px, 27vw, 384px) 1fr;
 }
 
+/* ---------- Modo enfoque: lectura sin distracciones ---------- */
+/* Oculta topbar + sidebar + panel central; el lector ocupa toda la pantalla. */
+.app--focus .topbar {
+  display: none;
+}
+.app--focus .sidebar {
+  display: none;
+}
+.app--focus .center {
+  display: none;
+}
+.app--focus .workspace[data-reader='open'] {
+  grid-template-columns: 1fr;
+}
+
 /* ---------- Sidebar ---------- */
 .sidebar {
   display: flex;

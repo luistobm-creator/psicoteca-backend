@@ -130,6 +130,23 @@ export default function App() {
 
   // --- Lector (panel derecho) ---
   const [openFile, setOpenFile] = useState(null);
+  // Modo enfoque: oculta topbar + sidebar, el lector ocupa toda la pantalla.
+  // Solo tiene sentido con un documento abierto — se apaga solo al cerrarlo.
+  const [focusMode, setFocusMode] = useState(false);
+  const toggleFocusMode = useCallback(() => setFocusMode((f) => !f), []);
+  // Sin documento abierto, el modo enfoque no tiene sentido: se apaga solo.
+  useEffect(() => {
+    if (!openFile) setFocusMode(false);
+  }, [openFile]);
+  // Escape también sale del modo enfoque (además de cerrar el drawer móvil).
+  useEffect(() => {
+    if (!focusMode) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') setFocusMode(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [focusMode]);
 
   // Abre un archivo en el lector y lo registra en "accesos rápidos".
   const openFileInReader = useCallback((file) => {
@@ -441,7 +458,7 @@ export default function App() {
         : 'dashboard';
 
   return (
-    <div className="app">
+    <div className={'app' + (focusMode ? ' app--focus' : '')}>
       <header className="topbar">
         <button
           type="button"
@@ -692,6 +709,8 @@ export default function App() {
             plan={plan}
             onRequirePro={requireProForDownload}
             onClose={() => setOpenFile(null)}
+            focusMode={focusMode}
+            onToggleFocus={toggleFocusMode}
           />
         )}
       </div>

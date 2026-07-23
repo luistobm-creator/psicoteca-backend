@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
-import { X, Lock, Download } from './icons.jsx';
+import { X, Lock, Download, Maximize, Minimize } from './icons.jsx';
 import { fileType } from '../lib/fileType.js';
 import * as api from '../api.js';
 import FavoriteButton from './FavoriteButton.jsx';
@@ -21,7 +21,7 @@ function analyzeFile(file) {
 // (`/api/items/{id}/content`). En modo progresivo PDF.js lo pide por rangos con
 // el token en la cabecera; en modo blob se descarga completo. Ningún enlace de
 // Drive llega al navegador. Un 403 (Pro sin plan) muestra el bloqueo.
-export default function ReaderPanel({ file, plan, onRequirePro, onClose }) {
+export default function ReaderPanel({ file, plan, onRequirePro, onClose, focusMode = false, onToggleFocus }) {
   const { label, color } = fileType(file);
   const { isPdf, progressive } = analyzeFile(file);
   const isPro = plan === 'pro';
@@ -133,6 +133,18 @@ export default function ReaderPanel({ file, plan, onRequirePro, onClose }) {
           {file.name}
         </span>
         <div className="reader__actions">
+          {onToggleFocus && (
+            <button
+              type="button"
+              className="iconbtn iconbtn--sm"
+              onClick={onToggleFocus}
+              title={focusMode ? 'Salir del modo enfoque (Esc)' : 'Modo enfoque: lectura sin distracciones'}
+              aria-label={focusMode ? 'Salir del modo enfoque' : 'Activar modo enfoque'}
+              aria-pressed={focusMode}
+            >
+              {focusMode ? <Minimize width={16} height={16} /> : <Maximize width={16} height={16} />}
+            </button>
+          )}
           <FavoriteButton item={file} className="fav--bar" />
           {canDownload && (
             <button
