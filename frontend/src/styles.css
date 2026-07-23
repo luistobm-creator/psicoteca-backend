@@ -4742,3 +4742,48 @@ a {
   background: var(--accent-weak);
   color: var(--accent);
 }
+
+/* ============================================================
+   Ayuda y soporte (/app/ayuda)
+   ============================================================ */
+.faq__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.faq__item {
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+.faq__question {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  list-style: none;
+}
+.faq__question::-webkit-details-marker {
+  display: none;
+}
+.faq__question::before {
+  content: '+';
+  display: inline-block;
+  width: 16px;
+  color: var(--accent);
+  font-weight: 700;
+}
+.faq__item[open] .faq__question::before {
+  content: '−';
+}
+.faq__answer {
+  margin: 10px 0 0 16px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+.faq__answer a {
+  color: var(--accent);
+}
