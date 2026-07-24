@@ -30,6 +30,8 @@ import AyudaSoporte from './pages/AyudaSoporte.jsx';
 import RankingComunidad from './pages/RankingComunidad.jsx';
 import GruposEstudio from './pages/GruposEstudio.jsx';
 import Mensajes from './pages/Mensajes.jsx';
+import HerramientaLector from './pages/HerramientaLector.jsx';
+import FavoritosRapidos from './pages/FavoritosRapidos.jsx';
 import ComingSoon from './pages/ComingSoon.jsx';
 // Recharts (~400 KB) solo se necesita en estas páginas — se carga aparte, no
 // en el bundle principal, mismo criterio que PdfViewer.jsx con pdfjs-dist.
@@ -78,6 +80,9 @@ createRoot(document.getElementById('root')).render(
             <Route path="/app/ranking" element={<RankingComunidad />} />
             <Route path="/app/grupos" element={<GruposEstudio />} />
             <Route path="/app/mensajes" element={<Mensajes />} />
+            <Route path="/app/modo-enfoque" element={<HerramientaLector tool="enfoque" />} />
+            <Route path="/app/citas-apa" element={<HerramientaLector tool="apa" />} />
+            <Route path="/app/favoritos" element={<FavoritosRapidos />} />
             <Route
               path="/app/consultorio/estadisticas"
               element={

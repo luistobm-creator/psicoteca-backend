@@ -33,7 +33,16 @@ function analyzeFile(file) {
 // (`/api/items/{id}/content`). En modo progresivo PDF.js lo pide por rangos con
 // el token en la cabecera; en modo blob se descarga completo. Ningún enlace de
 // Drive llega al navegador. Un 403 (Pro sin plan) muestra el bloqueo.
-export default function ReaderPanel({ file, plan, onRequirePro, onClose, focusMode = false, onToggleFocus }) {
+export default function ReaderPanel({
+  file,
+  plan,
+  onRequirePro,
+  onClose,
+  focusMode = false,
+  onToggleFocus,
+  autoOpenCitar = false,
+  onAutoOpenCitarConsumed,
+}) {
   const { label, color } = fileType(file);
   const { isPdf, progressive } = analyzeFile(file);
   const isPro = plan === 'pro';
@@ -103,6 +112,14 @@ export default function ReaderPanel({ file, plan, onRequirePro, onClose, focusMo
   // Descarga (Pro). Modo blob: reutiliza el blob (instantáneo). Progresivo:
   // re-fetchea el archivo completo al pulsar (no hay blob en memoria).
   const [showCitar, setShowCitar] = useState(false);
+  // Llegada desde el explicador de "Citas y referencias APA" (menú Perfil):
+  // abre el modal una sola vez y avisa al padre para que apague el pulso.
+  useEffect(() => {
+    if (!autoOpenCitar) return;
+    setShowCitar(true);
+    onAutoOpenCitarConsumed?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoOpenCitar]);
   const [downloading, setDownloading] = useState(false);
   const handleDownload = useCallback(async () => {
     if (!isPro) {

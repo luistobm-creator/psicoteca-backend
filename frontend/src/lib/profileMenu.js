@@ -9,9 +9,9 @@ export const PROFILE_MENU = [
     rows: [
       { label: 'Modo examen', to: '/app/modo-examen', iconPath: 'M9 11l3 3 8-8 M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11' },
       { label: 'Tarjetas de repaso', to: '/app/tarjetas-repaso', iconPath: 'M3 7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M8 3h11a2 2 0 0 1 2 2v11' },
-      { label: 'Modo enfoque', to: '/app', iconPath: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M12 12h.01' },
+      { label: 'Modo enfoque', to: '/app/modo-enfoque', iconPath: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M12 12h.01' },
       { label: 'Glosario clínico', to: '/app/glosario', iconPath: 'M4 19.5A2.5 2.5 0 0 1 6.5 17H20 M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z M9 7h7 M9 11h5' },
-      { label: 'Citas y referencias APA', to: '/app', iconPath: 'M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z' },
+      { label: 'Citas y referencias APA', to: '/app/citas-apa', iconPath: 'M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z' },
     ],
   },
   {
@@ -48,7 +48,7 @@ export const PROFILE_MENU = [
   {
     title: 'Biblioteca',
     rows: [
-      { label: 'Favoritos rápidos', to: '/app', iconPath: 'M12 2l2.9 6.3 6.9.6-5.2 4.6 1.5 6.8L12 17.3 5.9 20.9l1.5-6.8L2.2 9.5l6.9-.6z' },
+      { label: 'Favoritos rápidos', to: '/app/favoritos', iconPath: 'M12 2l2.9 6.3 6.9.6-5.2 4.6 1.5 6.8L12 17.3 5.9 20.9l1.5-6.8L2.2 9.5l6.9-.6z' },
       { label: 'Mis descargas', to: '/app/descargas', iconPath: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10l5 5 5-5 M12 15V3' },
       { label: 'Suscripción y facturación', to: '/configuracion', iconPath: 'M2 7h20v12H2z M2 11h20' },
     ],
@@ -93,6 +93,9 @@ const BUILT_ROUTES = new Set([
   '/app/ranking',
   '/app/grupos',
   '/app/mensajes',
+  '/app/modo-enfoque',
+  '/app/citas-apa',
+  '/app/favoritos',
 ]);
 
 // Rutas nuevas (no existentes aún) que deben caer en la página "Próximamente".

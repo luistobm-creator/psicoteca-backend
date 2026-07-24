@@ -15,15 +15,14 @@ import { Sun, Moon, Library, Menu, X } from './components/icons.jsx';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext.jsx';
 import { useFavorites } from './context/FavoritesContext.jsx';
+import { RECENTS_KEY, RECENTS_MAX } from './lib/recents.js';
 
 const PAGE_SIZE = 60;
 const SEARCH_LIMIT = 50;
 const SEARCH_MIN_CHARS = 3;
 const SEARCH_DEBOUNCE_MS = 300;
 const THEME_KEY = 'psicoteca-theme-v2';
-const RECENTS_KEY = 'psicoteca-recents-v1';
 const SIDEBAR_COLLAPSED_KEY = 'psicoteca-sidebar-collapsed-v1';
-const RECENTS_MAX = 6;
 
 // Recorre el árbol una vez y devuelve índices por id: el nodo y su padre.
 function indexTree(roots) {
@@ -155,6 +154,11 @@ export default function App() {
   // Solo tiene sentido con un documento abierto — se apaga solo al cerrarlo.
   const [focusMode, setFocusMode] = useState(false);
   const toggleFocusMode = useCallback(() => setFocusMode((f) => !f), []);
+  // Pulso de un solo uso para abrir la cita APA al llegar desde el explicador
+  // de "Citas y referencias APA" del menú Perfil (ver el efecto de
+  // location.state más abajo). ReaderPanel lo consume y avisa de vuelta con
+  // onAutoOpenCitarConsumed para que vuelva a false y no se repita solo.
+  const [pendingCitar, setPendingCitar] = useState(false);
   // Sin documento abierto, el modo enfoque no tiene sentido: se apaga solo.
   useEffect(() => {
     if (!openFile) setFocusMode(false);
@@ -420,12 +424,22 @@ export default function App() {
   // pantallas navegan aquí con `state.openFile` (el archivo reconstruido a
   // partir de su propia fila de actividad). Se abre una sola vez al llegar y
   // se limpia el state para que "atrás/adelante" no lo vuelva a disparar.
+  //
+  // Los explicadores de "Modo enfoque" y "Citas y referencias APA" (menú
+  // Perfil) usan el mismo mecanismo agregando `activateFocus`/`openCitar`:
+  // así "Continuar con <documento>" no solo reabre el archivo, también dispara
+  // la herramienta que el usuario venía buscando. Si el archivo no llega a
+  // abrirse (p. ej. Pro sin plan → modal de upgrade), openFile nunca se
+  // setea y el efecto que apaga focusMode sin documento abierto se encarga
+  // de deshacer el pulso — no hace falta guardarlo aquí.
   const location = useLocation();
   const navigate = useNavigate();
   useEffect(() => {
     const file = location.state?.openFile;
     if (!file) return;
     handleOpenFile(file);
+    if (location.state?.activateFocus) setFocusMode(true);
+    if (location.state?.openCitar) setPendingCitar(true);
     navigate('.', { replace: true, state: {} });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state]);
@@ -751,6 +765,8 @@ export default function App() {
             onClose={() => setOpenFile(null)}
             focusMode={focusMode}
             onToggleFocus={toggleFocusMode}
+            autoOpenCitar={pendingCitar}
+            onAutoOpenCitarConsumed={() => setPendingCitar(false)}
           />
         )}
       </div>
