@@ -4,6 +4,10 @@ import { ArrowLeft, Library } from '../components/icons.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import * as api from '../api.js';
 
+const CARD =
+  'group relative overflow-hidden rounded-2xl border border-border bg-surface shadow-sm ' +
+  'transition-all duration-300 hover:-translate-y-1 hover:border-accent/30 hover:shadow-lift dark:hover:shadow-lift-dark';
+
 // Cada fila: llave del backend, etiqueta y descripción breve.
 const PREFERENCIAS = [
   { key: 'recordatorio_citas', label: 'Recordatorio de citas', desc: 'Antes de cada cita agendada.' },
@@ -87,13 +91,13 @@ export default function Notificaciones() {
         {!loading && error && <p className="settings__error">{error}</p>}
 
         {!loading && prefs && (
-          <div className="notif__list">
+          <div className="flex flex-col gap-3">
             {PREFERENCIAS.map((p) => (
-              <div key={p.key} className="notif__row">
-                <span className="notif__rowbody">
-                  <span className="settings__value">{p.label}</span>
-                  <span className="settings__muted">{p.desc}</span>
-                </span>
+              <div key={p.key} className={CARD + ' flex items-center justify-between gap-4 p-4'}>
+                <div className="min-w-0">
+                  <div className="font-semibold text-ink">{p.label}</div>
+                  <div className="text-xs text-ink-muted">{p.desc}</div>
+                </div>
                 <button
                   type="button"
                   role="switch"

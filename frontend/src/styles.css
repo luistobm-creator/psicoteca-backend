@@ -4094,32 +4094,6 @@ a {
   word-break: break-word;
 }
 
-/* ============================================================
-   Notificaciones (/app/notificaciones)
-   ============================================================ */
-.notif__list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.notif__row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 14px 16px;
-  box-shadow: var(--shadow-sm);
-}
-.notif__rowbody {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
 /* Interruptor tipo iOS: <button role="switch"> con un thumb que se desliza. */
 .toggle {
   flex: 0 0 auto;
