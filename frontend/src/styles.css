@@ -2415,26 +2415,6 @@ a {
   border-color: var(--accent-soft);
   box-shadow: var(--shadow);
 }
-.settings__card--danger {
-  border-color: var(--danger-border);
-  background: var(--danger-weak);
-}
-.settings__cardtitle {
-  font-size: 15px;
-  font-weight: 700;
-}
-.settings__cardtitle--danger {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--danger);
-}
-.settings__row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
 .settings__label {
   font-size: 13px;
   color: var(--text-muted);
@@ -2500,11 +2480,6 @@ a {
 }
 .settings__btn--danger:hover:not(:disabled) {
   filter: brightness(1.06);
-}
-.settings__confirm {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
 }
 .settings__input {
   height: 42px;

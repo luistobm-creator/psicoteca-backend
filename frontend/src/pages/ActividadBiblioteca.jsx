@@ -110,7 +110,10 @@ export default function ActividadBiblioteca({ accion }) {
         <header className="settings__head">
           <div>
             <h1 className="settings__title">{copy.title}</h1>
-            <p className="settings__subtitle">{copy.subtitle}</p>
+            <p className="settings__subtitle">
+              {copy.subtitle}
+              {!loading && rows.length > 0 && ` · ${rows.length} ${rows.length === 1 ? 'documento' : 'documentos'}`}
+            </p>
           </div>
         </header>
 
