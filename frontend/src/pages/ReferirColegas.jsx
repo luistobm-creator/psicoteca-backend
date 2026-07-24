@@ -3,6 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Check, Library, Share, Users } from '../components/icons.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 
+const CARD =
+  'group relative overflow-hidden rounded-2xl border border-border bg-surface shadow-sm ' +
+  'transition-all duration-300 hover:-translate-y-1 hover:border-accent/30 hover:shadow-lift dark:hover:shadow-lift-dark';
+
 // Código corto y estable derivado del propio user_id (sin tabla nueva: no hay
 // nada que trackear todavía, es solo un identificador legible para el enlace).
 function codigoDe(userId) {
@@ -69,22 +73,24 @@ export default function ReferirColegas() {
           </div>
         </header>
 
-        <div className="referidos__card">
-          <div className="referidos__icon">
-            <Users width={22} height={22} />
-          </div>
-          <div style={{ flex: '1 1 auto', minWidth: 0 }}>
-            <p className="settings__label" style={{ marginBottom: 6 }}>
-              Tu enlace de invitación
-            </p>
-            <div className="apa-preview" style={{ wordBreak: 'break-all' }}>
+        <div className={CARD + ' flex items-start gap-4 p-4'}>
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-gradient text-white shadow-sm">
+            <Users width={20} height={20} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold text-ink-muted">Tu enlace de invitación</p>
+            <div className="mt-2 break-all rounded-lg border border-border-strong bg-bg px-3 py-2.5 text-sm text-ink">
               {enlace}
             </div>
           </div>
         </div>
 
-        <div className="modal__actions" style={{ justifyContent: 'flex-start', marginTop: 14 }}>
-          <button type="button" className="settings__btn settings__btn--accent" onClick={handleCopiar}>
+        <div className="flex flex-wrap gap-2.5">
+          <button
+            type="button"
+            onClick={handleCopiar}
+            className="inline-flex items-center gap-2 rounded-xl bg-accent-gradient px-4 py-2.5 text-sm font-bold text-white shadow-[0_2px_10px_-2px_var(--accent-soft)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_18px_-4px_var(--accent-soft)] active:translate-y-0"
+          >
             {copiado ? (
               <>
                 <Check width={15} height={15} /> ¡Copiado!
@@ -94,14 +100,18 @@ export default function ReferirColegas() {
             )}
           </button>
           {typeof navigator !== 'undefined' && navigator.share && (
-            <button type="button" className="settings__btn" onClick={handleCompartir}>
+            <button
+              type="button"
+              onClick={handleCompartir}
+              className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-ink-muted transition-colors duration-150 hover:border-accent/40 hover:text-accent"
+            >
               <Share width={15} height={15} />
               Compartir
             </button>
           )}
         </div>
 
-        <p className="settings__muted" style={{ marginTop: 18 }}>
+        <p className="text-sm text-ink-muted">
           Es un enlace de invitación simple: por ahora no llevamos un conteo de referidos ni recompensas.
         </p>
       </div>

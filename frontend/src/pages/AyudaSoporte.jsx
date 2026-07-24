@@ -1,5 +1,9 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Library, Mail } from '../components/icons.jsx';
+import { ArrowLeft, ChevronDown, Library, Mail } from '../components/icons.jsx';
+
+const CARD =
+  'group relative overflow-hidden rounded-2xl border border-border bg-surface shadow-sm ' +
+  'transition-all duration-300 hover:-translate-y-1 hover:border-accent/30 hover:shadow-lift dark:hover:shadow-lift-dark';
 
 const SOPORTE_EMAIL = 'luis.to.bm@gmail.com';
 
@@ -83,25 +87,36 @@ export default function AyudaSoporte() {
           </div>
         </header>
 
-        <div className="faq__list">
+        <div className="flex flex-col gap-3">
           {FAQ.map((item) => (
-            <details key={item.q} className="faq__item">
-              <summary className="faq__question">{item.q}</summary>
-              <p className="faq__answer">{item.a}</p>
+            <details key={item.q} className={CARD + ' group p-4'}>
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-ink [&::-webkit-details-marker]:hidden">
+                {item.q}
+                <ChevronDown
+                  width={16}
+                  height={16}
+                  className="shrink-0 text-ink-soft transition-transform duration-200 group-open:rotate-180"
+                />
+              </summary>
+              <p className="mt-3 text-[13.5px] leading-relaxed text-ink-muted [&_a]:font-semibold [&_a]:text-accent [&_a]:hover:underline">
+                {item.a}
+              </p>
             </details>
           ))}
         </div>
 
-        <div className="referidos__card" style={{ marginTop: 20 }}>
-          <div className="referidos__icon">
+        <div className={CARD + ' flex items-start gap-4 p-4'}>
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-gradient text-white shadow-sm">
             <Mail width={20} height={20} />
-          </div>
-          <div style={{ flex: '1 1 auto', minWidth: 0 }}>
-            <p className="settings__label" style={{ marginBottom: 4 }}>
-              ¿No encontraste lo que buscabas?
-            </p>
-            <p className="settings__muted">
-              Escríbenos directamente a <a href={`mailto:${SOPORTE_EMAIL}`}>{SOPORTE_EMAIL}</a>.
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold text-ink">¿No encontraste lo que buscabas?</p>
+            <p className="mt-1 text-sm text-ink-muted">
+              Escríbenos directamente a{' '}
+              <a href={`mailto:${SOPORTE_EMAIL}`} className="font-semibold text-accent hover:underline">
+                {SOPORTE_EMAIL}
+              </a>
+              .
             </p>
           </div>
         </div>

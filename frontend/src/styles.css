@@ -4127,39 +4127,6 @@ a {
   transform: translateX(18px);
 }
 
-/* ============================================================
-   Refiere colegas (/app/referidos)
-   ============================================================ */
-.referidos__card {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 16px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-}
-.referidos__icon {
-  flex: 0 0 auto;
-  width: 44px;
-  height: 44px;
-  display: grid;
-  place-items: center;
-  border-radius: 11px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
-  color: #fff;
-  box-shadow: var(--shadow-sm);
-}
-
-/* ============================================================
-   Ayuda y soporte (/app/ayuda)
-   ============================================================ */
-.faq__list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
 .faq__item {
   padding: 14px 16px;
   background: var(--surface);
